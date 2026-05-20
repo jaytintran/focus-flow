@@ -1,0 +1,39 @@
+export type Priority = "Low" | "Medium" | "High";
+export type ViewMode = "compact" | "normal" | "detailed";
+export type LayoutType = "list" | "gallery" | "table";
+
+export interface Category {
+	id: string;
+	name: string;
+	color: string;
+	iconName?: string;
+	isDefault?: boolean;
+	isHidden?: boolean;
+}
+
+export interface Task {
+	id: string;
+	name: string;
+	description?: string;
+	categoryId: string;
+	priority: Priority;
+	spentTime: number; // in milliseconds
+	dueDate?: string;
+	isRecurring?: boolean;
+	recurringIcon?: string;
+	recurringColor?: string;
+	completedDates?: string[];
+	completed: boolean;
+	createdAt: number;
+	completedAt?: number;
+}
+
+export type JournalType = "Task" | "Event";
+
+export interface JournalEntry {
+	id: string;
+	content: string;
+	type: JournalType;
+	timestamp: number;
+	categoryId?: string;
+}

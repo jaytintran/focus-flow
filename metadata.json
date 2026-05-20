@@ -1,0 +1,8 @@
+{
+  "name": "FocusFlow",
+  "description": "A comprehensive task management application with built-in time tracking, categories, and priority organization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
