@@ -5,15 +5,23 @@ import {
 	Calendar,
 	Flag,
 	Tag,
-	ChevronDown,
 	AlignLeft,
 	Wand2,
 	RefreshCw,
+	Clock,
+	Check,
+	Plus,
+	HelpCircle,
 } from "lucide-react";
 
 import { Task, Category, Priority } from "../types";
 import { PRIORITIES } from "../constants";
-import { parseSmartInput, formatDateToInput } from "../utils";
+import {
+	parseSmartInput,
+	formatDateToInput,
+	combineDateAndTime,
+	formatTimeOfDate,
+} from "../utils";
 import { CategoryIcon, CATEGORY_ICONS } from "./CategoryIcon";
 import { HABIT_COLORS } from "../colors";
 
@@ -63,8 +71,10 @@ export default function TaskForm({
 		initialTask?.priority || "Medium",
 	);
 	const [dueDate, setDueDate] = useState(initialTask?.dueDate || "");
+	const [startTime, setStartTime] = useState("");
+	const [duration, setDuration] = useState("");
+	const [showTooltip, setShowTooltip] = useState(false);
 
-	// Reset state when opening for a new task or editing a different one
 	useEffect(() => {
 		if (isOpen) {
 			setName(initialTask?.name || "");
@@ -75,6 +85,21 @@ export default function TaskForm({
 			setIsRecurring(initialTask?.isRecurring || defaultRecurring || false);
 			setRecurringIcon(initialTask?.recurringIcon || "Flame");
 			setRecurringColor(initialTask?.recurringColor || HABIT_COLORS[0].value);
+
+			if (initialTask?.startAt) {
+				const date = new Date(initialTask.startAt);
+				const hours = String(date.getHours()).padStart(2, "0");
+				const minutes = String(date.getMinutes()).padStart(2, "0");
+				setStartTime(`${hours}:${minutes}`);
+			} else {
+				setStartTime("");
+			}
+
+			if (initialTask?.duration) {
+				setDuration(String(Math.round(initialTask.duration / (60 * 1000))));
+			} else {
+				setDuration("");
+			}
 		}
 	}, [
 		isOpen,
@@ -86,7 +111,8 @@ export default function TaskForm({
 
 	const handleNameChange = (val: string) => {
 		setName(val);
-		const { categoryName, relativeDate } = parseSmartInput(val);
+		const { categoryName, relativeDate, startTimeStr, durationMs } =
+			parseSmartInput(val);
 
 		if (categoryName) {
 			const found = categories.find(
@@ -98,32 +124,63 @@ export default function TaskForm({
 		if (relativeDate) {
 			setDueDate(formatDateToInput(relativeDate));
 		}
+
+		if (startTimeStr) {
+			setStartTime(startTimeStr);
+			if (!dueDate) {
+				setDueDate(formatDateToInput(new Date()));
+			}
+		}
+
+		if (durationMs && startTimeStr) {
+			setDuration(String(Math.round(durationMs / (60 * 1000))));
+		}
 	};
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!name.trim()) return;
 
-		// Clean name from tags/dates before final submit
 		const { cleanName } = parseSmartInput(name);
+
+		let startAt: number | undefined;
+		let durationVal: number | undefined;
+		let endAt: number | undefined;
+
+		if (startTime) {
+			const dateStr = dueDate || formatDateToInput(new Date());
+			startAt = combineDateAndTime(dateStr, startTime);
+
+			if (duration && !isNaN(Number(duration))) {
+				durationVal = Number(duration) * 60 * 1000;
+				endAt = startAt + durationVal;
+			}
+		}
 
 		onSubmit({
 			name: cleanName,
 			description: description.trim() || undefined,
 			categoryId,
 			priority,
-			dueDate: dueDate || undefined,
+			dueDate:
+				dueDate || (startTime ? formatDateToInput(new Date()) : undefined),
 			isRecurring,
 			recurringIcon: isRecurring ? recurringIcon : undefined,
 			recurringColor: isRecurring ? recurringColor : undefined,
+			startAt,
+			duration: durationVal,
+			endAt,
 		});
 		onClose();
 	};
+
+	const selectedCat = categories.find((c) => c.id === categoryId);
 
 	return (
 		<AnimatePresence>
 			{isOpen && (
 				<>
+					{/* Backdrop */}
 					<motion.div
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
@@ -131,110 +188,221 @@ export default function TaskForm({
 						className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
 						onClick={onClose}
 					/>
+
+					{/* Sheet */}
 					<motion.div
 						initial={{ y: "100%" }}
 						animate={{ y: 0 }}
 						exit={{ y: "100%" }}
-						transition={{ type: "spring", damping: 25, stiffness: 300 }}
-						className="fixed inset-x-0 bottom-0 bg-white dark:bg-gray-900 rounded-t-[40px] z-[70] p-8 max-h-[90vh] overflow-y-auto shadow-2xl"
+						transition={{ type: "spring", damping: 28, stiffness: 320 }}
+						className="fixed inset-x-0 bottom-0 bg-white dark:bg-gray-950 rounded-t-3xl z-[70] max-h-[92vh] flex flex-col shadow-2xl"
 					>
-						<div className="max-w-2xl mx-auto">
-							<div className="flex items-center justify-between mb-8">
-								<h2 className="text-2xl font-black text-gray-900 dark:text-white">
-									{initialTask ? "Edit Task" : "Create Task"}
-								</h2>
+						{/* ── HEADER ── */}
+						<div className="flex-none px-5 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+							{/* Drag handle */}
+							<div className="w-9 h-1 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-3" />
+
+							<div className="flex items-center gap-3">
+								{/* Close */}
 								<button
+									type="button"
 									onClick={onClose}
-									className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-2xl transition-colors"
+									className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0"
 								>
-									<X className="w-6 h-6 text-gray-400" />
+									<X className="w-4 h-4 text-gray-400" />
+								</button>
+
+								<h2 className="flex-1 text-[15px] font-black text-gray-900 dark:text-white tracking-tight">
+									{initialTask ? "Edit Task" : "New Task"}
+								</h2>
+
+								{/* Submit in header */}
+								<button
+									type="submit"
+									form="task-form"
+									className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/25"
+								>
+									{initialTask ? (
+										<>
+											<Check className="w-3.5 h-3.5" />
+											Save
+										</>
+									) : (
+										<>
+											<Plus className="w-3.5 h-3.5" />
+											Create
+										</>
+									)}
 								</button>
 							</div>
+						</div>
 
-							<form onSubmit={handleSubmit} className="space-y-8">
-								<div>
-									<div className="flex items-center justify-between mb-2">
-										<label className="block text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500">
+						{/* ── SCROLLABLE BODY ── */}
+						<div className="flex-1 overflow-y-auto">
+							<form
+								id="task-form"
+								onSubmit={handleSubmit}
+								className="px-5 py-4 space-y-5"
+							>
+								{/* Task Name + Tooltip */}
+								<div className="relative">
+									<div className="flex items-center justify-between mb-1.5">
+										<label className="text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500">
 											Task Name
 										</label>
-										<div
-											className="flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity cursor-help"
-											title="Use #tag for category and !1h/!30m/!2d for due date"
-										>
-											<Wand2 className="w-3 h-3 text-blue-500" />
-											<span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter italic">
-												Magic Input
-											</span>
+										{/* Magic Input tooltip trigger */}
+										<div className="relative">
+											<button
+												type="button"
+												onClick={() => setShowTooltip(!showTooltip)}
+												onMouseEnter={() => setShowTooltip(true)}
+												onMouseLeave={() => setShowTooltip(false)}
+												className="flex items-center gap-1 opacity-50 hover:opacity-100 transition-opacity"
+											>
+												<HelpCircle className="w-3.5 h-3.5 text-blue-500" />
+												<span className="text-[9px] font-bold text-blue-500 uppercase tracking-tight">
+													Smart Input
+												</span>
+											</button>
+
+											<AnimatePresence>
+												{showTooltip && (
+													<motion.div
+														initial={{ opacity: 0, scale: 0.95, y: 6 }}
+														animate={{ opacity: 1, scale: 1, y: 0 }}
+														exit={{ opacity: 0, scale: 0.95, y: 6 }}
+														transition={{ duration: 0.15 }}
+														className="absolute right-0 top-full mt-2 w-64 p-3.5 bg-gray-900 dark:bg-gray-800 text-white rounded-2xl shadow-2xl z-[80] border border-white/10 pointer-events-none"
+													>
+														<p className="text-[10px] font-black text-blue-400 uppercase tracking-wider mb-2">
+															Smart Input Guide
+														</p>
+														<div className="space-y-1.5 text-[10px] text-gray-300">
+															<p>
+																<span className="text-purple-300 font-mono font-bold">
+																	#work
+																</span>{" "}
+																→ Set category
+															</p>
+															<p>
+																<span className="text-blue-300 font-mono font-bold">
+																	!today
+																</span>
+																{" · "}
+																<span className="text-blue-300 font-mono font-bold">
+																	!tomorrow
+																</span>
+																{" · "}
+																<span className="text-blue-300 font-mono font-bold">
+																	!2026-05-22
+																</span>{" "}
+																→ Date
+															</p>
+															<p>
+																<span className="text-green-300 font-mono font-bold">
+																	@2pm
+																</span>
+																{" · "}
+																<span className="text-green-300 font-mono font-bold">
+																	@14:30
+																</span>{" "}
+																→ Start time
+															</p>
+															<p>
+																<span className="text-orange-300 font-mono font-bold">
+																	~30m
+																</span>
+																{" · "}
+																<span className="text-orange-300 font-mono font-bold">
+																	~1.5h
+																</span>{" "}
+																→ Duration
+															</p>
+															<p>
+																<span className="text-red-300 font-mono font-bold">
+																	!!
+																</span>
+																{" · "}
+																<span className="text-red-300 font-mono font-bold">
+																	!high
+																</span>{" "}
+																→ Priority
+															</p>
+														</div>
+														<div className="mt-2 pt-2 border-t border-white/10 text-[9px] text-gray-500 italic leading-relaxed">
+															e.g. "Read book #study !today @3pm ~1.5h !!"
+														</div>
+													</motion.div>
+												)}
+											</AnimatePresence>
 										</div>
 									</div>
+
 									<input
 										autoFocus
 										type="text"
 										value={name}
 										onChange={(e) => handleNameChange(e.target.value)}
-										placeholder="Task name... #work !2h"
-										className="w-full text-2xl font-bold bg-transparent border-b-2 border-gray-100 dark:border-gray-800 pb-2 focus:border-blue-500 outline-none transition-colors text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-700"
+										placeholder='e.g. "Read book #study !today @3pm ~1h"'
+										className="w-full text-[15px] font-semibold bg-transparent border-b-2 border-gray-100 dark:border-gray-800 pb-2 focus:border-blue-500 outline-none transition-colors text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-700"
 									/>
 								</div>
 
+								{/* Description */}
 								<div>
-									<label className="block text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500 mb-2">
-										<div className="flex items-center gap-1">
-											<AlignLeft className="w-3 h-3" /> Description (Optional)
-										</div>
+									<label className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500 mb-1.5">
+										<AlignLeft className="w-3 h-3" />
+										Description
 									</label>
 									<textarea
 										value={description}
 										onChange={(e) => setDescription(e.target.value)}
-										placeholder="Add more details about this task..."
-										rows={3}
-										className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-700 dark:text-gray-300 placeholder-gray-400"
+										placeholder="Add details (optional)..."
+										rows={2}
+										className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-600 resize-none"
 									/>
 								</div>
 
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+								{/* Category + Priority row */}
+								<div className="grid grid-cols-2 gap-4">
+									{/* Category */}
 									<div>
-										<label className="block text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500 mb-3">
-											<div className="flex items-center gap-1">
-												<Tag className="w-3 h-3" /> Category
-											</div>
+										<label className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500 mb-1.5">
+											<Tag className="w-3 h-3" />
+											Category
 										</label>
-										<div className="flex flex-wrap gap-2">
+										<div className="flex flex-wrap gap-1.5">
 											{categories.map((cat) => (
 												<button
 													key={cat.id}
 													type="button"
 													onClick={() => setCategoryId(cat.id)}
-													className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all border ${
+													className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border ${
 														categoryId === cat.id
-															? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20"
-															: "bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+															? "bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-500/20"
+															: "bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
 													}`}
 												>
-													<div className="flex items-center gap-2">
-														<CategoryIcon
-															name={cat.iconName}
-															className={`w-3.5 h-3.5 ${categoryId === cat.id ? "text-white" : ""}`}
-															style={
-																categoryId !== cat.id
-																	? { color: cat.color }
-																	: {}
-															}
-														/>
-														{cat.name}
-													</div>
+													<CategoryIcon
+														name={cat.iconName}
+														className={`w-3 h-3 ${categoryId === cat.id ? "text-white" : ""}`}
+														style={
+															categoryId !== cat.id ? { color: cat.color } : {}
+														}
+													/>
+													{cat.name}
 												</button>
 											))}
 										</div>
 									</div>
 
+									{/* Priority */}
 									<div>
-										<label className="block text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500 mb-3">
-											<div className="flex items-center gap-1">
-												<Flag className="w-3 h-3" /> Priority
-											</div>
+										<label className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500 mb-1.5">
+											<Flag className="w-3 h-3" />
+											Priority
 										</label>
-										<div className="flex gap-2">
+										<div className="flex gap-1.5">
 											{(["Low", "Medium", "High"] as Priority[]).map((p) => {
 												const pInfo = PRIORITIES.find(
 													(prev) => prev.label === p,
@@ -244,10 +412,10 @@ export default function TaskForm({
 														key={p}
 														type="button"
 														onClick={() => setPriority(p)}
-														className={`flex-1 py-2 rounded-2xl text-xs font-bold transition-all border ${
+														className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all border ${
 															priority === p
-																? "bg-white dark:bg-gray-800 shadow-xl ring-2"
-																: "bg-gray-50 dark:bg-gray-800 border-transparent text-gray-500"
+																? "bg-white dark:bg-gray-900 shadow-sm ring-1"
+																: "bg-gray-50 dark:bg-gray-900 border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
 														}`}
 														style={{
 															borderColor:
@@ -263,8 +431,94 @@ export default function TaskForm({
 									</div>
 								</div>
 
+								{/* Date / Start Time / Duration */}
+								<div>
+									<label className="text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500 mb-1.5 block">
+										Schedule
+									</label>
+									<div className="grid grid-cols-3 gap-2">
+										{/* Date */}
+										<div className="relative">
+											<Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+											<input
+												type="date"
+												value={dueDate}
+												onChange={(e) => setDueDate(e.target.value)}
+												className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl pl-7 pr-2 py-2 text-[11px] font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-700 dark:text-gray-300"
+											/>
+										</div>
+
+										{/* Start Time */}
+										<div className="relative">
+											<Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+											<input
+												type="time"
+												value={startTime}
+												onChange={(e) => {
+													setStartTime(e.target.value);
+													if (e.target.value && !dueDate) {
+														setDueDate(formatDateToInput(new Date()));
+													}
+												}}
+												className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl pl-7 pr-2 py-2 text-[11px] font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-700 dark:text-gray-300"
+											/>
+										</div>
+
+										{/* Duration */}
+										<div className="relative">
+											<Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+											<input
+												type="number"
+												min="1"
+												value={duration}
+												onChange={(e) => setDuration(e.target.value)}
+												disabled={!startTime}
+												placeholder={startTime ? "min" : "—"}
+												className={`w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl pl-7 pr-2 py-2 text-[11px] font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-700 dark:text-gray-300 ${
+													!startTime ? "opacity-40 cursor-not-allowed" : ""
+												}`}
+											/>
+										</div>
+									</div>
+
+									{/* Calculated schedule preview */}
+									<AnimatePresence>
+										{startTime &&
+											duration &&
+											!isNaN(Number(duration)) &&
+											Number(duration) > 0 && (
+												<motion.div
+													initial={{ opacity: 0, height: 0 }}
+													animate={{ opacity: 1, height: "auto" }}
+													exit={{ opacity: 0, height: 0 }}
+													className="overflow-hidden"
+												>
+													<div className="mt-2 px-3 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/40 flex items-center justify-between">
+														<span className="text-[10px] font-bold text-blue-500 uppercase tracking-wide">
+															Schedule
+														</span>
+														<span className="text-[11px] font-mono font-bold text-blue-600 dark:text-blue-400">
+															{(() => {
+																const dateStr =
+																	dueDate || formatDateToInput(new Date());
+																const start = combineDateAndTime(
+																	dateStr,
+																	startTime,
+																);
+																const end =
+																	start + Number(duration) * 60 * 1000;
+																return `${formatTimeOfDate(start)} – ${formatTimeOfDate(end)}`;
+															})()}
+														</span>
+													</div>
+												</motion.div>
+											)}
+									</AnimatePresence>
+								</div>
+
+								{/* Recurring Habit */}
 								<div
-									className={`p-5 rounded-3xl border transition-all ${
+									className={`rounded-2xl border transition-all ${
 										isRecurring
 											? darkMode
 												? "bg-gray-900 border-gray-800"
@@ -274,60 +528,66 @@ export default function TaskForm({
 												: "bg-gray-50 border-gray-100"
 									}`}
 								>
-									<div className="flex items-center justify-between mb-4">
-										<div className="flex items-center gap-3">
-											<div
-												className={`w-9 h-9 rounded-2xl flex items-center justify-center ${
-													isRecurring
-														? "bg-orange-500/10 text-orange-500"
-														: "bg-gray-100 dark:bg-gray-800 text-gray-400"
-												}`}
-											>
-												<RefreshCw className="w-4 h-4" />
-											</div>
-											<div>
-												<p className="text-sm font-black text-gray-900 dark:text-white">
-													Recurring Habit
-												</p>
-												<p className="text-[10px] text-gray-500 uppercase tracking-tight">
-													Turn this task into a daily habit
-												</p>
-											</div>
+									{/* Toggle row */}
+									<button
+										type="button"
+										onClick={() => setIsRecurring(!isRecurring)}
+										className="w-full flex items-center gap-3 px-4 py-3"
+									>
+										<div
+											className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
+												isRecurring
+													? "bg-orange-500/10 text-orange-500"
+													: "bg-gray-100 dark:bg-gray-800 text-gray-400"
+											}`}
+										>
+											<RefreshCw className="w-3.5 h-3.5" />
 										</div>
-										<button
-											type="button"
-											onClick={() => setIsRecurring(!isRecurring)}
-											className={`relative w-11 h-6 rounded-full transition-all ${
+										<div className="flex-1 text-left">
+											<p className="text-[13px] font-black text-gray-900 dark:text-white">
+												Recurring Habit
+											</p>
+											<p className="text-[10px] text-gray-500 leading-none mt-0.5">
+												Repeat this task daily
+											</p>
+										</div>
+										{/* Toggle pill */}
+										<div
+											className={`relative w-9 h-5 rounded-full transition-all shrink-0 ${
 												isRecurring
 													? "bg-orange-500"
 													: "bg-gray-200 dark:bg-gray-700"
 											}`}
 										>
 											<div
-												className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${isRecurring ? "translate-x-6" : ""}`}
+												className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+													isRecurring ? "translate-x-4" : ""
+												}`}
 											/>
-										</button>
-									</div>
+										</div>
+									</button>
 
+									{/* Expanded habit options */}
 									{isRecurring && (
 										<motion.div
 											initial={{ height: 0, opacity: 0 }}
 											animate={{ height: "auto", opacity: 1 }}
-											className="space-y-5 pt-4 border-t border-gray-100 dark:border-gray-800"
+											className="px-4 pb-4 space-y-4 border-t border-gray-100 dark:border-gray-800 pt-3"
 										>
+											{/* Icon picker */}
 											<div>
-												<label className="block text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500 mb-3">
-													Choose Icon
+												<label className="block text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500 mb-2">
+													Icon
 												</label>
-												<div className="grid grid-cols-6 gap-2">
+												<div className="grid grid-cols-8 gap-1.5">
 													{Object.keys(CATEGORY_ICONS).map((iconName) => (
 														<button
 															key={iconName}
 															type="button"
 															onClick={() => setRecurringIcon(iconName)}
-															className={`aspect-square rounded-2xl flex items-center justify-center transition-all border ${
+															className={`aspect-square rounded-xl flex items-center justify-center transition-all border ${
 																recurringIcon === iconName
-																	? "text-white border-transparent shadow-lg scale-105"
+																	? "text-white border-transparent shadow scale-105"
 																	: darkMode
 																		? "bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700"
 																		: "bg-gray-50 border-gray-100 text-gray-500 hover:bg-gray-100"
@@ -340,26 +600,27 @@ export default function TaskForm({
 														>
 															<CategoryIcon
 																name={iconName}
-																className="w-4 h-4"
+																className="w-3.5 h-3.5"
 															/>
 														</button>
 													))}
 												</div>
 											</div>
 
+											{/* Color picker */}
 											<div>
-												<label className="block text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500 mb-3">
-													Choose Color
+												<label className="block text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500 mb-2">
+													Color
 												</label>
-												<div className="grid grid-cols-7 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+												<div className="grid grid-cols-9 gap-1.5 max-h-[120px] overflow-y-auto pr-1">
 													{HABIT_COLORS.map((color) => (
 														<button
 															key={color.value}
 															type="button"
 															onClick={() => setRecurringColor(color.value)}
-															className={`aspect-square rounded-xl transition-all border-2 ${
+															className={`aspect-square rounded-lg transition-all border-2 ${
 																recurringColor === color.value
-																	? "border-gray-900 dark:border-white scale-110 shadow-lg"
+																	? "border-gray-900 dark:border-white scale-110 shadow"
 																	: "border-transparent hover:scale-105"
 															}`}
 															style={{ backgroundColor: color.value }}
@@ -367,7 +628,7 @@ export default function TaskForm({
 														>
 															{recurringColor === color.value && (
 																<div className="w-full h-full flex items-center justify-center">
-																	<div className="w-2 h-2 bg-white rounded-full shadow-md" />
+																	<div className="w-1.5 h-1.5 bg-white rounded-full shadow" />
 																</div>
 															)}
 														</button>
@@ -378,26 +639,8 @@ export default function TaskForm({
 									)}
 								</div>
 
-								<div>
-									<label className="block text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500 mb-2">
-										<div className="flex items-center gap-1">
-											<Calendar className="w-3 h-3" /> Due Date (Optional)
-										</div>
-									</label>
-									<input
-										type="date"
-										value={dueDate}
-										onChange={(e) => setDueDate(e.target.value)}
-										className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold text-gray-700 dark:text-gray-300"
-									/>
-								</div>
-
-								<button
-									type="submit"
-									className="w-full py-5 bg-blue-600 text-white rounded-[24px] font-black text-lg hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/30 active:scale-95"
-								>
-									{initialTask ? "Save Changes" : "Create Task"}
-								</button>
+								{/* Bottom safe-area spacing */}
+								<div className="h-4" />
 							</form>
 						</div>
 					</motion.div>

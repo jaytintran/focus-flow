@@ -1,5 +1,5 @@
 export type Priority = "Low" | "Medium" | "High";
-export type ViewMode = "compact" | "normal" | "detailed";
+export type ViewMode = "compact" | "normal" | "mini";
 export type LayoutType = "list" | "gallery" | "table";
 
 export interface Category {
@@ -26,6 +26,9 @@ export interface Task {
 	completed: boolean;
 	createdAt: number;
 	completedAt?: number;
+	startAt?: number; // Unix timestamp in milliseconds for start
+	duration?: number; // Duration in milliseconds
+	endAt?: number; // Unix timestamp in milliseconds for end
 }
 
 export type JournalType = "Task" | "Event";

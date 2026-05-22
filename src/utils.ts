@@ -71,6 +71,8 @@ export function parseSmartInput(input: string): {
 	priority?: Priority;
 	isRecurring?: boolean;
 	recurringPattern?: "daily" | "weekly";
+	startTimeStr?: string;
+	durationMs?: number;
 } {
 	let cleanName = input;
 	let categoryName: string | undefined;
@@ -78,6 +80,8 @@ export function parseSmartInput(input: string): {
 	let priority: Priority | undefined;
 	let isRecurring = false;
 	let recurringPattern: "daily" | "weekly" | undefined;
+	let startTimeStr: string | undefined;
+	let durationMs: number | undefined;
 
 	// Extract category (#tag)
 	const categoryMatch = input.match(/#(\w+)/);
@@ -94,6 +98,39 @@ export function parseSmartInput(input: string): {
 		recurringPattern =
 			pattern === "daily" || pattern === "day" ? "daily" : "weekly";
 		cleanName = cleanName.replace(/@(daily|day|weekly|week)/gi, "").trim();
+	}
+
+	// Extract start time (@14:00, @2pm, @9:30am, etc.) - only matches if not recurring pattern
+	const startAtMatch = cleanName.match(/@(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+	if (startAtMatch) {
+		let hours = parseInt(startAtMatch[1]);
+		const minutes = startAtMatch[2] ? parseInt(startAtMatch[2]) : 0;
+		const meridiem = startAtMatch[3]?.toLowerCase();
+
+		if (meridiem) {
+			if (meridiem === "pm" && hours !== 12) {
+				hours += 12;
+			} else if (meridiem === "am" && hours === 12) {
+				hours = 0;
+			}
+		}
+
+		startTimeStr = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+		cleanName = cleanName.replace(/@\d{1,2}(?::\d{2})?\s*(am|pm)?/gi, "").trim();
+	}
+
+	// Extract duration (~45m, ~1.5h, ~2h30m, ~30, etc.)
+	const durationMatch = cleanName.match(/~(\d+(?:\.\d+)?)\s*(h|m|hr|min|hour|minute)?s?/i);
+	if (durationMatch) {
+		const amount = parseFloat(durationMatch[1]);
+		const unit = durationMatch[2] ? durationMatch[2].toLowerCase() : "m";
+
+		if (unit.startsWith("h")) {
+			durationMs = Math.round(amount * 60 * 60 * 1000);
+		} else {
+			durationMs = Math.round(amount * 60 * 1000);
+		}
+		cleanName = cleanName.replace(/~(\d+(?:\.\d+)?)\s*(h|m|hr|min|hour|minute)?s?/gi, "").trim();
 	}
 
 	// Extract priority (!! or !high, !medium, !low)
@@ -116,9 +153,9 @@ export function parseSmartInput(input: string): {
 		cleanName = cleanName.replace(/!!|!(high|med|medium|low)/gi, "").trim();
 	}
 
-	// Extract time patterns
+	// Extract time patterns (due dates)
 	const timeMatch = input.match(
-		/!(today|tomorrow|tmr|mon|tue|wed|thu|fri|sat|sun|(\d+)([hdw]))/i,
+		/!(today|tomorrow|tmr|mon|tue|wed|thu|fri|sat|sun|(\d{4}-\d{2}-\d{2})|(\d{1,2})[/-](\d{1,2})|(\d+)([hdw]))/i,
 	);
 	if (timeMatch) {
 		const timePattern = timeMatch[1].toLowerCase();
@@ -146,10 +183,19 @@ export function parseSmartInput(input: string): {
 			let daysToAdd = targetDay - currentDay;
 			if (daysToAdd <= 0) daysToAdd += 7; // Next week if day already passed
 			relativeDate = new Date(now.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
-		} else if (timeMatch[2] && timeMatch[3]) {
+		} else if (timeMatch[2]) {
+			// Explicit date: YYYY-MM-DD
+			const [year, month, day] = timeMatch[2].split("-").map(Number);
+			relativeDate = new Date(year, month - 1, day);
+		} else if (timeMatch[3] && timeMatch[4]) {
+			// Explicit date: MM-DD or MM/DD
+			const month = parseInt(timeMatch[3]);
+			const day = parseInt(timeMatch[4]);
+			relativeDate = new Date(now.getFullYear(), month - 1, day);
+		} else if (timeMatch[5] && timeMatch[6]) {
 			// Relative time: 2h, 3d, 1w
-			const amount = parseInt(timeMatch[2]);
-			const unit = timeMatch[3].toLowerCase();
+			const amount = parseInt(timeMatch[5]);
+			const unit = timeMatch[6].toLowerCase();
 			let milliseconds = 0;
 
 			if (unit === "h") {
@@ -165,7 +211,7 @@ export function parseSmartInput(input: string): {
 
 		cleanName = cleanName
 			.replace(
-				/!(today|tomorrow|tmr|mon|tue|wed|thu|fri|sat|sun|\d+[hdw])/gi,
+				/!(today|tomorrow|tmr|mon|tue|wed|thu|fri|sat|sun|\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}|\d+[hdw])/gi,
 				"",
 			)
 			.trim();
@@ -181,7 +227,61 @@ export function parseSmartInput(input: string): {
 		priority,
 		isRecurring,
 		recurringPattern,
+		startTimeStr,
+		durationMs,
 	};
+}
+
+export function combineDateAndTime(dateStr: string, timeStr: string): number {
+	const dStr = dateStr || formatDateToInput(new Date());
+	const [year, month, day] = dStr.split("-").map(Number);
+	const [hours, minutes] = timeStr.split(":").map(Number);
+	return new Date(year, month - 1, day, hours, minutes, 0, 0).getTime();
+}
+
+export function formatTimeOfDate(timestamp: number): string {
+	return new Date(timestamp).toLocaleTimeString([], {
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+}
+
+export function formatDurationShort(ms: number): string {
+	const minutes = Math.floor((ms / (1000 * 60)) % 60);
+	const hours = Math.floor(ms / (1000 * 60 * 60));
+
+	const h = hours > 0 ? `${hours}h ` : "";
+	const m = minutes > 0 ? `${minutes}m` : "";
+
+	return `${h}${m}`.trim() || "0m";
+}
+
+export function formatScheduledTime(startAt: number, endAt?: number, duration?: number): string {
+	const startStr = formatTimeOfDate(startAt);
+	if (endAt) {
+		const endStr = formatTimeOfDate(endAt);
+		const durStr = duration ? ` (${formatDurationShort(duration)})` : "";
+		return `${startStr} - ${endStr}${durStr}`;
+	}
+	return startStr;
+}
+
+export function formatScheduledDate(dateStr: string): string {
+	const todayStr = formatDateToInput(new Date());
+	const tomorrow = new Date();
+	tomorrow.setDate(tomorrow.getDate() + 1);
+	const tomorrowStr = formatDateToInput(tomorrow);
+
+	if (dateStr === todayStr) {
+		return "Today";
+	}
+	if (dateStr === tomorrowStr) {
+		return "Tomorrow";
+	}
+
+	const [year, month, day] = dateStr.split("-").map(Number);
+	const date = new Date(year, month - 1, day);
+	return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 export function formatDateToInput(date: Date): string {
