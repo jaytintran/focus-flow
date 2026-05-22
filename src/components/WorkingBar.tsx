@@ -11,6 +11,7 @@ import {
 	Trash2,
 	Clock,
 	RotateCcw,
+	Wand2,
 } from "lucide-react";
 import { Task, Category } from "../types";
 import { formatDuration, formatTimer, parseSmartInput } from "../utils";
@@ -46,6 +47,7 @@ export default function WorkingBar({
 }: WorkingBarProps) {
 	const [input, setInput] = useState("");
 	const [isFocused, setIsFocused] = useState(false);
+	const [showTooltip, setShowTooltip] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	const suggestions = tasks
@@ -208,11 +210,97 @@ export default function WorkingBar({
 								{input && (
 									<button
 										onClick={() => setInput("")}
-										className="p-2 text-gray-400 hover:text-gray-600"
+										className="p-2 text-gray-400 hover:text-gray-600 animate-fade-in"
 									>
 										<X className="w-4 h-4" />
 									</button>
 								)}
+								<div className="relative flex items-center shrink-0 mr-2">
+									<button
+										type="button"
+										onClick={() => setShowTooltip(!showTooltip)}
+										onMouseEnter={() => setShowTooltip(true)}
+										onMouseLeave={() => setShowTooltip(false)}
+										className="p-2 text-gray-400 hover:text-blue-500 transition-colors"
+										title="Smart Input Magic"
+									>
+										<Wand2 className="w-4 h-4" />
+									</button>
+									<AnimatePresence>
+										{showTooltip && (
+											<motion.div
+												initial={{ opacity: 0, scale: 0.95, y: 10 }}
+												animate={{ opacity: 1, scale: 1, y: 0 }}
+												exit={{ opacity: 0, scale: 0.95, y: 10 }}
+												className="absolute right-0 top-full mt-2 w-64 p-4 bg-gray-950 dark:bg-gray-800 text-white rounded-2xl shadow-2xl z-[110] border border-gray-850 dark:border-gray-700 text-[10px] space-y-2 pointer-events-none"
+											>
+												<p className="font-black text-blue-400 uppercase tracking-wider mb-1 text-xs flex items-center gap-1.5">
+													<Wand2 className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
+													Smart Input Guide
+												</p>
+												<div className="space-y-1 text-gray-300">
+													<p>
+														<b className="text-white">#Category:</b> Use{" "}
+														<code className="bg-black/25 px-1 py-0.5 rounded text-purple-300 font-mono">
+															#work
+														</code>{" "}
+														or{" "}
+														<code className="bg-black/25 px-1 py-0.5 rounded text-purple-300 font-mono">
+															#gym
+														</code>
+													</p>
+													<p>
+														<b className="text-white">!Date:</b> Use{" "}
+														<code className="bg-black/25 px-1 py-0.5 rounded text-blue-300 font-mono">
+															!today
+														</code>
+														,{" "}
+														<code className="bg-black/25 px-1 py-0.5 rounded text-blue-300 font-mono">
+															!tomorrow
+														</code>
+														,{" "}
+														<code className="bg-black/25 px-1 py-0.5 rounded text-blue-300 font-mono">
+															!2026-05-22
+														</code>
+													</p>
+													<p>
+														<b className="text-white">@Start Time:</b> Use{" "}
+														<code className="bg-black/25 px-1 py-0.5 rounded text-green-300 font-mono">
+															@2pm
+														</code>{" "}
+														or{" "}
+														<code className="bg-black/25 px-1 py-0.5 rounded text-green-300 font-mono">
+															@14:30
+														</code>
+													</p>
+													<p>
+														<b className="text-white">~Duration:</b> Use{" "}
+														<code className="bg-black/25 px-1 py-0.5 rounded text-orange-300 font-mono">
+															~30m
+														</code>
+														,{" "}
+														<code className="bg-black/25 px-1 py-0.5 rounded text-orange-300 font-mono">
+															~1.5h
+														</code>
+													</p>
+													<p>
+														<b className="text-white">!Priority:</b> Use{" "}
+														<code className="bg-black/25 px-1 py-0.5 rounded text-red-300 font-mono">
+															!!
+														</code>{" "}
+														or{" "}
+														<code className="bg-black/25 px-1 py-0.5 rounded text-red-300 font-mono">
+															!high
+														</code>
+													</p>
+												</div>
+												<div className="pt-1.5 border-t border-white/10 text-[9px] text-gray-400 italic">
+													Example: Code review #work !today @3pm ~1h !!
+												</div>
+											</motion.div>
+										)}
+									</AnimatePresence>
+								</div>
 								<div className="pr-4 py-2 shrink-0 hidden sm:block">
 									<div className="px-3 py-1 font-mono text-xs font-black text-gray-300 border border-gray-100 dark:border-gray-800 rounded-lg">
 										0:00:00

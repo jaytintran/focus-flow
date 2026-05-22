@@ -29,3 +29,66 @@
 	-ms-overflow-style: none;
 	scrollbar-width: none;
 }
+
+/* Safe area layout extensions for premium edge-to-edge screens */
+:root {
+	--safe-area-top: env(safe-area-inset-top, 0px);
+}
+
+/* Fallback status bar height overrides for native packaging environments */
+html.plt-android {
+	--safe-area-top: 45px; /* Standard Pixel/Android punch hole/notch status bar clearance */
+}
+
+html.plt-ios {
+	--safe-area-top: 45px; /* Standard iOS notch clearance */
+}
+
+.app-header,
+header {
+	padding-top: calc(1.5rem + var(--safe-area-top)) !important;
+}
+
+.journal-header {
+	padding-top: calc(1.5rem + var(--safe-area-top)) !important;
+}
+
+#root {
+	padding-left: env(safe-area-inset-left, 0px);
+	padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Extend task list container padding so items scroll past bottom overlays and safe area */
+.task-list-container {
+	padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* Set HTML/Body background colors to match app themes, avoiding layout boundary flashes */
+html,
+body {
+	background-color: #f8f9fe;
+	transition: background-color 300ms ease;
+}
+
+html.dark,
+body.dark,
+.dark body {
+	background-color: #030712; /* bg-gray-950 */
+}
+
+/* Custom active task breathing glow animation */
+@keyframes active-task-glow {
+	0%,
+	100% {
+		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+		border-color: rgba(59, 130, 246, 0.6);
+	}
+	50% {
+		box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+		border-color: rgba(59, 130, 246, 0.3);
+	}
+}
+
+.animate-pulse-subtle {
+	animation: active-task-glow 2s infinite ease-in-out;
+}

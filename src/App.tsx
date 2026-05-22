@@ -17,8 +17,10 @@ import {
 	parseSmartInput,
 	formatDateToInput,
 	formatDueDate,
+	combineDateAndTime,
 } from "./utils";
 import { TaskRow } from "./components/TaskRow";
+import { ReorderableTaskRow } from "./components/ReorderableTaskRow";
 import { TaskTable, TaskGallery } from "./components/TaskLayouts";
 import { LayoutSwitcher } from "@/src/components/LayoutSwitcher";
 import { CategorySwitcher } from "./components/CategorySwitcher";
@@ -30,6 +32,7 @@ import CategoryManager from "./components/CategoryManager";
 import { HeaderActions } from "./components/HeaderActions";
 import * as db from "./db";
 import { HabitRow } from "./components/HabitRow";
+import { Capacitor } from "@capacitor/core";
 
 export default function App() {
 	// State
@@ -60,6 +63,7 @@ export default function App() {
 		const saved = localStorage.getItem("focusflow_showcompleted");
 		return saved ? JSON.parse(saved) : true; // default to showing completed
 	});
+	const [showScheduled, setShowScheduled] = useState<boolean>(true);
 
 	// Modals/View state
 	const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -81,6 +85,12 @@ export default function App() {
 
 	// Load data from IndexedDB on mount
 	useEffect(() => {
+		// Detect and register platform classes for native devices
+		if (Capacitor.isNativePlatform()) {
+			document.documentElement.classList.add("plt-native");
+			document.documentElement.classList.add(`plt-${Capacitor.getPlatform()}`);
+		}
+
 		async function loadData() {
 			try {
 				// Migrate from localStorage if needed
@@ -129,31 +139,49 @@ export default function App() {
 					setShowCompleted(JSON.parse(savedShowCompleted));
 
 				if (savedActiveTaskId && savedTimerActive === "true") {
-					let startTimeValue = savedTimerStartTime ? parseInt(savedTimerStartTime) : null;
-					let initialSpentValue = savedInitialSpentTime ? parseInt(savedInitialSpentTime) : 0;
+					let startTimeValue = savedTimerStartTime
+						? parseInt(savedTimerStartTime)
+						: null;
+					let initialSpentValue = savedInitialSpentTime
+						? parseInt(savedInitialSpentTime)
+						: 0;
 					let elapsed = 0;
-					const matchingTask = tasksData.find(t => t.id === savedActiveTaskId);
-					
+					const matchingTask = tasksData.find(
+						(t) => t.id === savedActiveTaskId,
+					);
+
 					if (matchingTask) {
 						if (startTimeValue !== null) {
 							elapsed = Date.now() - startTimeValue;
-							tasksData = tasksData.map(t =>
-								t.id === savedActiveTaskId ? { ...t, spentTime: initialSpentValue + Math.max(0, elapsed) } : t
+							tasksData = tasksData.map((t) =>
+								t.id === savedActiveTaskId
+									? {
+											...t,
+											spentTime: initialSpentValue + Math.max(0, elapsed),
+										}
+									: t,
 							);
 						} else if (savedTimerLastTick) {
 							const lastTick = parseInt(savedTimerLastTick);
 							elapsed = Date.now() - lastTick;
-							tasksData = tasksData.map(t =>
-								t.id === savedActiveTaskId ? { ...t, spentTime: t.spentTime + Math.max(0, elapsed) } : t
+							tasksData = tasksData.map((t) =>
+								t.id === savedActiveTaskId
+									? { ...t, spentTime: t.spentTime + Math.max(0, elapsed) }
+									: t,
 							);
-							const updatedTask = tasksData.find(t => t.id === savedActiveTaskId);
+							const updatedTask = tasksData.find(
+								(t) => t.id === savedActiveTaskId,
+							);
 							startTimeValue = Date.now();
 							initialSpentValue = updatedTask ? updatedTask.spentTime : 0;
 							db.setItem("focusflow_timerstarttime", startTimeValue.toString());
-							db.setItem("focusflow_initialspenttime", initialSpentValue.toString());
+							db.setItem(
+								"focusflow_initialspenttime",
+								initialSpentValue.toString(),
+							);
 						}
 					}
-					
+
 					timerStartTimeRef.current = startTimeValue;
 					initialSpentTimeRef.current = initialSpentValue;
 
@@ -285,11 +313,13 @@ export default function App() {
 				const startTime = timerStartTimeRef.current || now;
 				const initialSpent = initialSpentTimeRef.current;
 				const elapsed = now - startTime;
-				
+
 				isTimerTickRef.current = true;
 				setTasks((prevTasks) =>
 					prevTasks.map((t) =>
-						t.id === activeTaskId ? { ...t, spentTime: initialSpent + Math.max(0, elapsed) } : t,
+						t.id === activeTaskId
+							? { ...t, spentTime: initialSpent + Math.max(0, elapsed) }
+							: t,
 					),
 				);
 				db.setItem("focusflow_timerlasttick", now.toString());
@@ -298,10 +328,10 @@ export default function App() {
 			if (timerStartTimeRef.current !== null && isDataLoaded) {
 				const elapsed = Date.now() - timerStartTimeRef.current;
 				const finalTime = initialSpentTimeRef.current + Math.max(0, elapsed);
-				
+
 				timerStartTimeRef.current = null;
 				initialSpentTimeRef.current = 0;
-				
+
 				db.removeItem("focusflow_timerstarttime");
 				db.removeItem("focusflow_initialspenttime");
 
@@ -320,7 +350,12 @@ export default function App() {
 	// Listen to pause/resume events (app switching / locking screen)
 	useEffect(() => {
 		const handleVisibilityChange = () => {
-			if (document.visibilityState === "hidden" && timerActive && activeTaskId && timerStartTimeRef.current !== null) {
+			if (
+				document.visibilityState === "hidden" &&
+				timerActive &&
+				activeTaskId &&
+				timerStartTimeRef.current !== null
+			) {
 				const now = Date.now();
 				const elapsed = now - timerStartTimeRef.current;
 				const finalTime = initialSpentTimeRef.current + Math.max(0, elapsed);
@@ -333,7 +368,12 @@ export default function App() {
 					db.setItem("focusflow_tasks", JSON.stringify(updated));
 					return updated;
 				});
-			} else if (document.visibilityState === "visible" && timerActive && activeTaskId && timerStartTimeRef.current !== null) {
+			} else if (
+				document.visibilityState === "visible" &&
+				timerActive &&
+				activeTaskId &&
+				timerStartTimeRef.current !== null
+			) {
 				// Instant update on resume to avoid 1s tick visual delay
 				const now = Date.now();
 				const elapsed = now - timerStartTimeRef.current;
@@ -395,20 +435,42 @@ export default function App() {
 		// Check if recurring from toggle OR parsed pattern
 		const isRecurring = quickAddRecurring || parsed.isRecurring;
 
+		let startAt: number | undefined;
+		let durationVal: number | undefined;
+		let endAt: number | undefined;
+
+		const dateStr = parsed.relativeDate
+			? formatDateToInput(parsed.relativeDate)
+			: parsed.startTimeStr
+				? formatDateToInput(new Date())
+				: undefined;
+
+		if (parsed.startTimeStr) {
+			startAt = combineDateAndTime(
+				dateStr || formatDateToInput(new Date()),
+				parsed.startTimeStr,
+			);
+			if (parsed.durationMs) {
+				durationVal = parsed.durationMs;
+				endAt = startAt + durationVal;
+			}
+		}
+
 		const newTask: Task = {
 			id: generateId(),
 			name: parsed.cleanName,
 			categoryId: catId,
 			priority: parsed.priority || "Medium",
 			spentTime: 0,
-			dueDate: parsed.relativeDate
-				? formatDateToInput(parsed.relativeDate)
-				: undefined,
+			dueDate: dateStr,
 			completed: false,
 			createdAt: Date.now(),
 			isRecurring: isRecurring,
 			recurringIcon: isRecurring ? quickAddRecurringIcon : undefined,
 			completedDates: isRecurring ? [] : undefined,
+			startAt,
+			duration: durationVal,
+			endAt,
 		};
 
 		setTasks([newTask, ...tasks]);
@@ -585,30 +647,47 @@ export default function App() {
 	// Derived state
 	const habits = useMemo(() => tasks.filter((t) => t.isRecurring), [tasks]);
 
-	const { activeTasks, completedTasks } = useMemo(() => {
-		const filtered = tasks
-			.filter((t) => {
-				const matchesSearch = t.name
-					.toLowerCase()
-					.includes(searchQuery.toLowerCase());
-				const matchesCategory =
-					selectedCategoryId === "all" || t.categoryId === selectedCategoryId;
-				return matchesSearch && matchesCategory;
-			})
+	const { activeTasks, scheduledTasks, completedTasks } = useMemo(() => {
+		const filtered = tasks.filter((t) => {
+			const matchesSearch = t.name
+				.toLowerCase()
+				.includes(searchQuery.toLowerCase());
+			const matchesCategory =
+				selectedCategoryId === "all" || t.categoryId === selectedCategoryId;
+			return matchesSearch && matchesCategory;
+		});
+
+		// Sort active unscheduled tasks: prioritize default category
+		const activeUnscheduled = filtered
+			.filter((t) => !t.completed && !t.startAt && !t.dueDate)
 			.sort((a, b) => {
-				// Prioritize default category among non-completed tasks
-				if (!a.completed && !b.completed) {
-					const catA = categories.find((c) => c.id === a.categoryId);
-					const catB = categories.find((c) => c.id === b.categoryId);
-					if (catA?.isDefault && !catB?.isDefault) return -1;
-					if (!catA?.isDefault && catB?.isDefault) return 1;
-				}
+				const catA = categories.find((c) => c.id === a.categoryId);
+				const catB = categories.find((c) => c.id === b.categoryId);
+				if (catA?.isDefault && !catB?.isDefault) return -1;
+				if (!catA?.isDefault && catB?.isDefault) return 1;
 				return 0;
 			});
 
+		// Sort active scheduled tasks: chronologically earliest to latest
+		const getTaskSortTimestamp = (task: Task): number => {
+			if (task.startAt) return task.startAt;
+			if (task.dueDate) {
+				const [year, month, day] = task.dueDate.split("-").map(Number);
+				return new Date(year, month - 1, day, 0, 0, 0, 0).getTime();
+			}
+			return Infinity;
+		};
+
+		const activeScheduled = filtered
+			.filter((t) => !t.completed && (t.startAt || t.dueDate))
+			.sort((a, b) => getTaskSortTimestamp(a) - getTaskSortTimestamp(b));
+
+		const completed = filtered.filter((t) => t.completed);
+
 		return {
-			activeTasks: filtered.filter((t) => !t.completed),
-			completedTasks: filtered.filter((t) => t.completed),
+			activeTasks: activeUnscheduled,
+			scheduledTasks: activeScheduled,
+			completedTasks: completed,
 		};
 	}, [tasks, searchQuery, selectedCategoryId, categories]);
 
@@ -646,7 +725,7 @@ export default function App() {
 	};
 
 	const toggleViewMode = () => {
-		const modes: ViewMode[] = ["compact", "normal", "detailed"];
+		const modes: ViewMode[] = ["compact", "normal", "mini"];
 		const currentIndex = modes.indexOf(viewMode);
 		const nextIndex = (currentIndex + 1) % modes.length;
 		setViewMode(modes[nextIndex]);
@@ -654,11 +733,11 @@ export default function App() {
 
 	return (
 		<div
-			className={`min-h-screen transition-colors duration-300 ${darkMode ? "bg-gray-950 text-white" : "bg-[#F8F9FE] text-gray-900"} font-sans pb-24 sm:pb-32 overflow-x-hidden`}
+			className={`h-screen flex flex-col transition-colors duration-300 ${darkMode ? "bg-gray-950 text-white" : "bg-[#F8F9FE] text-gray-900"} font-sans overflow-hidden`}
 		>
 			{/* Header */}
 			<header
-				className={`sticky top-0 z-40 ${darkMode ? "bg-gray-950/80 border-gray-800" : "bg-[#F8F9FE]/80 border-gray-100"} backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4 mb-4 sm:mb-5 border-b`}
+				className={`app-header sticky top-0 z-40 ${darkMode ? "bg-gray-950/80 border-gray-800" : "bg-[#F8F9FE]/80 border-gray-100"} backdrop-blur-md px-4 sm:px-6 pt-[calc(env(safe-area-inset-top,0px)+12px)] pb-3 sm:py-4 mb-4 sm:mb-5 border-b`}
 			>
 				<div className="w-full mx-auto flex items-center justify-between gap-4">
 					<WorkingBar
@@ -668,7 +747,14 @@ export default function App() {
 						timerActive={timerActive}
 						onSelectTask={handleTogglePlay}
 						onAddTask={(name, catId) => {
-							const { cleanName, relativeDate } = parseSmartInput(name);
+							const parsed = parseSmartInput(name);
+							const {
+								cleanName,
+								relativeDate,
+								startTimeStr,
+								durationMs,
+								priority,
+							} = parsed;
 							const id = generateId();
 
 							const defaultCat =
@@ -678,17 +764,39 @@ export default function App() {
 									? selectedCategoryId
 									: catId || defaultCat?.id || "1";
 
+							let startAt: number | undefined;
+							let durationVal: number | undefined;
+							let endAt: number | undefined;
+
+							const dateStr = relativeDate
+								? formatDateToInput(relativeDate)
+								: startTimeStr
+									? formatDateToInput(new Date())
+									: undefined;
+
+							if (startTimeStr) {
+								startAt = combineDateAndTime(
+									dateStr || formatDateToInput(new Date()),
+									startTimeStr,
+								);
+								if (durationMs) {
+									durationVal = durationMs;
+									endAt = startAt + durationVal;
+								}
+							}
+
 							const newTask: Task = {
 								id,
 								name: cleanName,
 								categoryId: finalCatId,
-								priority: "Medium",
+								priority: priority || "Medium",
 								spentTime: 0,
-								dueDate: relativeDate
-									? formatDateToInput(relativeDate)
-									: undefined,
+								dueDate: dateStr,
 								completed: false,
 								createdAt: Date.now(),
+								startAt,
+								duration: durationVal,
+								endAt,
 							};
 							setTasks([newTask, ...tasks]);
 							setActiveTaskId(id);
@@ -725,9 +833,9 @@ export default function App() {
 				</div>
 			</header>
 
-			<main className="max-w-5xl mx-auto px-4 sm:px-6 space-y-4 sm:space-y-8">
+			<main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 flex flex-col overflow-hidden space-y-4 sm:space-y-6 min-h-0">
 				{/* Stats Section */}
-				<section className="grid grid-cols-4 gap-3 sm:gap-4">
+				<section className="grid grid-cols-4 gap-3 sm:gap-4 shrink-0">
 					<div
 						className={`${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-100"} p-4 py-2 rounded-xl border shadow-sm`}
 					>
@@ -773,7 +881,7 @@ export default function App() {
 				</section>
 
 				{/* Filters, Search, Quick Add, Habits */}
-				<section className="space-y-2">
+				<section className="space-y-2 shrink-0">
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 items-center">
 						{/* Unified Input with Mode Toggle */}
 						<div className="relative">
@@ -861,20 +969,22 @@ export default function App() {
 						</div>
 					</div>
 
-					<HabitRow
-						habits={habits}
-						onToggleHabit={handleToggleHabit}
-						onAddHabit={() => {
-							setEditingTask(null);
-							setTaskModalDefaultRecurring(true);
-							setIsTaskModalOpen(true);
-						}}
-						onEditHabit={(habit) => {
-							setEditingTask(habit);
-							setIsTaskModalOpen(true);
-						}}
-						darkMode={darkMode}
-					/>
+					<div className="mt-2">
+						<HabitRow
+							habits={habits}
+							onToggleHabit={handleToggleHabit}
+							onAddHabit={() => {
+								setEditingTask(null);
+								setTaskModalDefaultRecurring(true);
+								setIsTaskModalOpen(true);
+							}}
+							onEditHabit={(habit) => {
+								setEditingTask(habit);
+								setIsTaskModalOpen(true);
+							}}
+							darkMode={darkMode}
+						/>
+					</div>
 
 					<div className="flex items-center justify-between gap-3 sm:gap-4 overflow-x-auto pb-0">
 						<CategorySwitcher
@@ -895,7 +1005,7 @@ export default function App() {
 				</section>
 
 				{/* Task List */}
-				<section className="space-y-3">
+				<section className="task-list-container flex-1 overflow-y-auto no-scrollbar space-y-3 min-h-0 pt-2!">
 					{/* Active Tasks */}
 					{activeTasks.length > 0 && layoutType === "list" ? (
 						<Reorder.Group
@@ -906,30 +1016,21 @@ export default function App() {
 						>
 							<AnimatePresence initial={false}>
 								{activeTasks.map((task) => (
-									<Reorder.Item
+									<ReorderableTaskRow
 										key={task.id}
-										value={task}
-										initial={{ opacity: 0, y: 10 }}
-										animate={{ opacity: 1, y: 0 }}
-										exit={{ opacity: 0, scale: 0.95 }}
-									>
-										<TaskRow
-											task={task}
-											category={categories.find(
-												(c) => c.id === task.categoryId,
-											)}
-											isActive={activeTaskId === task.id && timerActive}
-											viewMode={viewMode}
-											onTogglePlay={handleTogglePlay}
-											onDelete={handleDeleteTask}
-											onToggleComplete={handleToggleComplete}
-											onEdit={(t) => {
-												setEditingTask(t);
-												setIsTaskModalOpen(true);
-											}}
-											onReenter={handleReenterTask}
-										/>
-									</Reorder.Item>
+										task={task}
+										category={categories.find((c) => c.id === task.categoryId)}
+										isActive={activeTaskId === task.id && timerActive}
+										viewMode={viewMode}
+										onTogglePlay={handleTogglePlay}
+										onDelete={handleDeleteTask}
+										onToggleComplete={handleToggleComplete}
+										onEdit={(t) => {
+											setEditingTask(t);
+											setIsTaskModalOpen(true);
+										}}
+										onReenter={handleReenterTask}
+									/>
 								))}
 							</AnimatePresence>
 						</Reorder.Group>
@@ -966,6 +1067,108 @@ export default function App() {
 							darkMode={darkMode}
 						/>
 					) : null}
+
+					{/* Scheduled Section Toggle */}
+					{scheduledTasks.length > 0 && (
+						<div className="pt-2">
+							<button
+								onClick={() => setShowScheduled(!showScheduled)}
+								className={`w-full flex items-center justify-between px-2 py-2 text-sm font-semibold transition-all ${
+									darkMode
+										? "text-gray-400 hover:text-gray-300"
+										: "text-gray-500 hover:text-gray-700"
+								}`}
+							>
+								<div className="flex items-center gap-2">
+									<Icons.Calendar className="w-4 h-4 text-blue-500" />
+									<span>Scheduled ({scheduledTasks.length})</span>
+								</div>
+								<motion.div
+									animate={{ rotate: showScheduled ? 180 : 0 }}
+									transition={{ duration: 0.2 }}
+								>
+									<ChevronDown className="w-4 h-4" />
+								</motion.div>
+							</button>
+
+							<AnimatePresence>
+								{showScheduled && (
+									<motion.div
+										initial={{ height: 0, opacity: 0 }}
+										animate={{ height: "auto", opacity: 1 }}
+										exit={{ height: 0, opacity: 0 }}
+										transition={{ duration: 0.2 }}
+										className="overflow-hidden"
+									>
+										<div className="pt-3 space-y-3">
+											{layoutType === "list" ? (
+												<div className="space-y-3">
+													{scheduledTasks.map((task) => (
+														<motion.div
+															key={task.id}
+															initial={{ opacity: 0 }}
+															animate={{ opacity: 1 }}
+														>
+															<TaskRow
+																task={task}
+																category={categories.find(
+																	(c) => c.id === task.categoryId,
+																)}
+																isActive={
+																	activeTaskId === task.id && timerActive
+																}
+																viewMode={viewMode}
+																onTogglePlay={handleTogglePlay}
+																onDelete={handleDeleteTask}
+																onToggleComplete={handleToggleComplete}
+																onEdit={(t) => {
+																	setEditingTask(t);
+																	setIsTaskModalOpen(true);
+																}}
+																onReenter={handleReenterTask}
+															/>
+														</motion.div>
+													))}
+												</div>
+											) : layoutType === "gallery" ? (
+												<TaskGallery
+													tasks={scheduledTasks}
+													categories={categories}
+													activeTaskId={activeTaskId}
+													timerActive={timerActive}
+													onTogglePlay={handleTogglePlay}
+													onDelete={handleDeleteTask}
+													onToggleComplete={handleToggleComplete}
+													onEdit={(t) => {
+														setEditingTask(t);
+														setIsTaskModalOpen(true);
+													}}
+													onReenter={handleReenterTask}
+													darkMode={darkMode}
+												/>
+											) : (
+												<TaskTable
+													tasks={scheduledTasks}
+													categories={categories}
+													activeTaskId={activeTaskId}
+													timerActive={timerActive}
+													onTogglePlay={handleTogglePlay}
+													onDelete={handleDeleteTask}
+													onToggleComplete={handleToggleComplete}
+													onEdit={(t) => {
+														setEditingTask(t);
+														setIsTaskModalOpen(true);
+													}}
+													onReenter={handleReenterTask}
+													darkMode={darkMode}
+												/>
+											)}
+										</div>
+									</motion.div>
+								)}
+							</AnimatePresence>
+						</div>
+					)}
 
 					{/* Completed Section Toggle */}
 					{completedTasks.length > 0 && (
@@ -1068,51 +1271,78 @@ export default function App() {
 					)}
 
 					{/* Empty State */}
-					{activeTasks.length === 0 && completedTasks.length === 0 && (
-						<AnimatePresence>
-							<motion.div
-								initial={{ opacity: 0 }}
-								animate={{ opacity: 1 }}
-								className={`text-center py-12 sm:py-20 rounded-3xl sm:rounded-[40px] border border-dashed ${
-									darkMode
-										? "bg-gray-900/50 border-gray-800"
-										: "bg-white border-gray-200"
-								}`}
-							>
-								<div
-									className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-										darkMode ? "bg-blue-500/10" : "bg-blue-50"
+					{activeTasks.length === 0 &&
+						scheduledTasks.length === 0 &&
+						completedTasks.length === 0 && (
+							<AnimatePresence>
+								<motion.div
+									initial={{ opacity: 0 }}
+									animate={{ opacity: 1 }}
+									className={`text-center py-12 sm:py-20 rounded-3xl sm:rounded-[40px] border border-dashed ${
+										darkMode
+											? "bg-gray-900/50 border-gray-800"
+											: "bg-white border-gray-200"
 									}`}
 								>
-									<Inbox className="w-8 h-8 text-blue-500" />
-								</div>
-								<h3
-									className={`text-lg font-bold mb-1 ${
-										darkMode ? "text-white" : "text-gray-900"
-									}`}
-								>
-									Clear as crystal
-								</h3>
-								<p className="text-gray-400 text-sm">
-									No tasks found. Time to relax or add one!
-								</p>
-							</motion.div>
-						</AnimatePresence>
-					)}
+									<div
+										className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+											darkMode ? "bg-blue-500/10" : "bg-blue-50"
+										}`}
+									>
+										<Inbox className="w-8 h-8 text-blue-500" />
+									</div>
+									<h3
+										className={`text-lg font-bold mb-1 ${
+											darkMode ? "text-white" : "text-gray-900"
+										}`}
+									>
+										Clear as crystal
+									</h3>
+									<p className="text-gray-400 text-sm">
+										No tasks found. Time to relax or add one!
+									</p>
+								</motion.div>
+							</AnimatePresence>
+						)}
 				</section>
 			</main>
 
-			{/* Floating Action Button */}
-			<button
-				onClick={() => {
-					setEditingTask(null);
-					setIsTaskModalOpen(true);
-				}}
-				className="fixed right-4 bottom-20 sm:right-6 sm:bottom-12 md:right-12 md:bottom-12 w-14 h-14 sm:w-16 sm:h-16
-						bg-blue-600 hover:bg-blue-700 text-white rounded-[24px] shadow-2xl shadow-blue-500/40 flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-50 group"
-			>
-				<Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />
-			</button>
+			{/* Floating Action Buttons */}
+			<div className="fixed right-4 bottom-20 sm:right-6 sm:bottom-12 md:right-12 md:bottom-12 flex items-center gap-3 z-50">
+				{/* Journal Toggle FAB */}
+				<motion.button
+					whileTap={{ scale: 0.95 }}
+					onClick={() => setIsJournalOpen(true)}
+					className={`w-14 h-14 sm:w-16 sm:h-16 rounded-[24px] shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 group ${
+						isJournalOpen
+							? "bg-blue-600 text-white shadow-blue-500/40"
+							: darkMode
+								? "bg-gray-800 text-gray-300 shadow-black/40 border border-gray-700"
+								: "bg-white text-gray-600 shadow-gray-400/30 border border-gray-200"
+					}`}
+				>
+					<Icons.FileText className="w-6 h-6 sm:w-7 sm:h-7" />
+				</motion.button>
+
+				{/* Add Task FAB - hidden in Journal view */}
+				<AnimatePresence>
+					{!isJournalOpen && (
+						<motion.button
+							initial={{ scale: 0, opacity: 0 }}
+							animate={{ scale: 1, opacity: 1 }}
+							exit={{ scale: 0, opacity: 0 }}
+							transition={{ duration: 0.2 }}
+							onClick={() => {
+								setEditingTask(null);
+								setIsTaskModalOpen(true);
+							}}
+							className="w-14 h-14 sm:w-16 sm:h-16 bg-blue-600 hover:bg-blue-700 text-white rounded-[24px] shadow-2xl shadow-blue-500/40 flex items-center justify-center transition-all hover:scale-110 active:scale-95 group"
+						>
+							<Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />
+						</motion.button>
+					)}
+				</AnimatePresence>
+			</div>
 
 			{/* Modals */}
 			<TaskForm
@@ -1136,9 +1366,12 @@ export default function App() {
 				categories={categories}
 				onUpdate={(newCategories) => {
 					setCategories(newCategories);
-					
+
 					const newCategoryIds = new Set(newCategories.map((c) => c.id));
-					if (selectedCategoryId !== "all" && !newCategoryIds.has(selectedCategoryId)) {
+					if (
+						selectedCategoryId !== "all" &&
+						!newCategoryIds.has(selectedCategoryId)
+					) {
 						setSelectedCategoryId("all");
 					}
 
@@ -1148,7 +1381,7 @@ export default function App() {
 								return { ...t, categoryId: "" };
 							}
 							return t;
-						})
+						}),
 					);
 				}}
 				darkMode={darkMode}
@@ -1166,6 +1399,12 @@ export default function App() {
 						onAddEntry={handleAddJournalEntry}
 						onUpdateEntry={handleUpdateJournalEntry}
 						onDeleteEntry={handleDeleteJournalEntry}
+						onToggleCompleteTask={handleToggleComplete}
+						onDeleteTask={handleDeleteTask}
+						onEditTask={(t) => {
+							setEditingTask(t);
+							setIsTaskModalOpen(true);
+						}}
 						darkMode={darkMode}
 					/>
 				)}
