@@ -646,76 +646,19 @@ export default function JournalView({
 													className={`${viewMode === "mini" ? "p-2 rounded-xl" : "p-4 rounded-2xl"} border transition-all duration-300 hover:translate-x-1 ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-50 shadow-sm"}`}
 												>
 													{item.isScheduledActiveTask ? (
-														<div className="flex flex-col gap-3">
-															<div className="flex items-start justify-between gap-3">
-																<div className="flex items-start gap-3 min-w-0 flex-1">
-																	<button
-																		onClick={(e) => {
-																			e.stopPropagation();
-																			onToggleCompleteTask(item.originalId);
-																		}}
-																		className="shrink-0 text-gray-400 hover:text-green-500 transition-colors mt-0.5"
-																	>
-																		<Circle className="w-5 h-5" />
-																	</button>
-																	<div className="min-w-0 flex-1">
-																		<h4 className="text-sm font-bold text-gray-900 dark:text-white truncate">
-																			{item.content}
-																		</h4>
-																		{category && viewMode === "normal" && (
-																			<div className="mt-1 flex items-center gap-1.5 opacity-60">
-																				<div
-																					className="flex items-center justify-center p-0.5 rounded bg-gray-100 dark:bg-gray-800"
-																					style={{ color: category.color }}
-																				>
-																					<CategoryIcon
-																						name={category.iconName}
-																						className="w-3 h-3"
-																					/>
-																				</div>
-																				<span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
-																					{category.name}
-																				</span>
-																			</div>
-																		)}
-																	</div>
-																</div>
-
-																<div className="flex items-center gap-1 shrink-0">
-																	<button
-																		onClick={() => onEditTask(item.task!)}
-																		className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors"
-																		title="Edit task"
-																	>
-																		<Pencil className="w-3.5 h-3.5" />
-																	</button>
-																	<button
-																		onClick={() =>
-																			onDeleteTask(item.originalId)
-																		}
-																		className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-																		title="Delete task"
-																	>
-																		<Trash2 className="w-3.5 h-3.5" />
-																	</button>
-																</div>
-															</div>
-
-															{viewMode === "mini" ? (
-																// MINI MODE - Floating chips
+														viewMode === "mini" ? (
+															// MINI MODE - Compact layout
+															<>
+																{/* Floating chips on top-right border */}
 																<div className="absolute -top-2 right-0 z-30 flex flex-row-reverse flex-wrap items-start gap-1 justify-end max-w-full pl-8">
 																	{/* SCHEDULED TIME CHIP */}
 																	<div className="flex items-center gap-1 bg-blue-600/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-md border border-blue-500 shadow-sm text-[8px] font-mono">
 																		<Clock className="w-2 h-2" />
 																		{item.task?.startAt && item.task?.endAt
-																			? `${new Date(
-																					item.task.startAt,
-																				).toLocaleTimeString([], {
+																			? `${new Date(item.task.startAt).toLocaleTimeString([], {
 																					hour: "numeric",
 																					minute: "2-digit",
-																				})} → ${new Date(
-																					item.task.endAt,
-																				).toLocaleTimeString([], {
+																				})} → ${new Date(item.task.endAt).toLocaleTimeString([], {
 																					hour: "numeric",
 																					minute: "2-digit",
 																				})}`
@@ -752,8 +695,112 @@ export default function JournalView({
 																		</div>
 																	)}
 																</div>
-															) : (
-																// NORMAL MODE - Inline chip
+
+																{/* Compact content */}
+																<div className="flex items-center justify-between gap-2">
+																	<div className="flex items-center gap-2 min-w-0 flex-1">
+																		<button
+																			onClick={(e) => {
+																				e.stopPropagation();
+																				onToggleCompleteTask(item.originalId);
+																			}}
+																			className="shrink-0 text-gray-400 hover:text-green-500 transition-colors"
+																		>
+																			<Circle className="w-3.5 h-3.5" />
+																		</button>
+																		{category ? (
+																			<div
+																				className="flex items-center justify-center p-0.5 rounded shrink-0"
+																				style={{
+																					color: category.color,
+																					backgroundColor: `${category.color}15`,
+																				}}
+																			>
+																				<CategoryIcon
+																					name={category.iconName}
+																					className="w-3 h-3"
+																				/>
+																			</div>
+																		) : null}
+																		<p
+																			className={`text-xs font-bold truncate ${darkMode ? "text-gray-300" : "text-gray-700"}`}
+																		>
+																			{item.content}
+																		</p>
+																	</div>
+																	<div className="flex items-center gap-0.5 shrink-0">
+																		<button
+																			onClick={() => onEditTask(item.task!)}
+																			className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+																			title="Edit task"
+																		>
+																			<Pencil className="w-3 h-3" />
+																		</button>
+																		<button
+																			onClick={() => onDeleteTask(item.originalId)}
+																			className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+																			title="Delete task"
+																		>
+																			<Trash2 className="w-3 h-3" />
+																		</button>
+																	</div>
+																</div>
+															</>
+														) : (
+															// NORMAL MODE - Full layout
+															<div className="flex flex-col gap-3">
+																<div className="flex items-start justify-between gap-3">
+																	<div className="flex items-start gap-3 min-w-0 flex-1">
+																		<button
+																			onClick={(e) => {
+																				e.stopPropagation();
+																				onToggleCompleteTask(item.originalId);
+																			}}
+																			className="shrink-0 text-gray-400 hover:text-green-500 transition-colors mt-0.5"
+																		>
+																			<Circle className="w-5 h-5" />
+																		</button>
+																		<div className="min-w-0 flex-1">
+																			<h4 className="text-sm font-bold text-gray-900 dark:text-white truncate">
+																				{item.content}
+																			</h4>
+																			{category && (
+																				<div className="mt-1 flex items-center gap-1.5 opacity-60">
+																					<div
+																						className="flex items-center justify-center p-0.5 rounded bg-gray-100 dark:bg-gray-800"
+																						style={{ color: category.color }}
+																					>
+																						<CategoryIcon
+																							name={category.iconName}
+																							className="w-3 h-3"
+																						/>
+																					</div>
+																					<span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+																						{category.name}
+																					</span>
+																				</div>
+																			)}
+																		</div>
+																	</div>
+
+																	<div className="flex items-center gap-1 shrink-0">
+																		<button
+																			onClick={() => onEditTask(item.task!)}
+																			className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors"
+																			title="Edit task"
+																		>
+																			<Pencil className="w-3.5 h-3.5" />
+																		</button>
+																		<button
+																			onClick={() => onDeleteTask(item.originalId)}
+																			className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+																			title="Delete task"
+																		>
+																			<Trash2 className="w-3.5 h-3.5" />
+																		</button>
+																	</div>
+																</div>
+
 																<div className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 px-2.5 py-1 rounded-xl w-fit border border-blue-100 dark:border-blue-900/35 shadow-sm">
 																	<Clock className="w-3.5 h-3.5 animate-pulse" />
 																	<span>
@@ -762,14 +809,10 @@ export default function JournalView({
 																			: "Scheduled"}
 																		:{" "}
 																		{item.task?.startAt && item.task?.endAt
-																			? `${new Date(
-																					item.task.startAt,
-																				).toLocaleTimeString([], {
+																			? `${new Date(item.task.startAt).toLocaleTimeString([], {
 																					hour: "numeric",
 																					minute: "2-digit",
-																				})} → ${new Date(
-																					item.task.endAt,
-																				).toLocaleTimeString([], {
+																				})} → ${new Date(item.task.endAt).toLocaleTimeString([], {
 																					hour: "numeric",
 																					minute: "2-digit",
 																				})}`
@@ -780,8 +823,8 @@ export default function JournalView({
 																				)}
 																	</span>
 																</div>
-															)}
-														</div>
+															</div>
+														)
 													) : editingEntryId === item.id ? (
 														// EDIT MODE
 														<div className="space-y-3">
