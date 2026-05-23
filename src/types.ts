@@ -1,4 +1,4 @@
-export type Priority = "Low" | "Medium" | "High";
+export type Tag = "quick" | "explore" | "finish" | "handle";
 export type ViewMode = "compact" | "normal" | "mini";
 export type LayoutType = "list" | "gallery" | "table";
 
@@ -16,7 +16,7 @@ export interface Task {
 	name: string;
 	description?: string;
 	categoryId: string;
-	priority: Priority;
+	tag: Tag;
 	spentTime: number; // in milliseconds
 	dueDate?: string;
 	isRecurring?: boolean;
@@ -29,6 +29,7 @@ export interface Task {
 	startAt?: number; // Unix timestamp in milliseconds for start
 	duration?: number; // Duration in milliseconds
 	endAt?: number; // Unix timestamp in milliseconds for end
+	inbox?: boolean; // Flag for inbox tasks
 }
 
 export type JournalType = "Task" | "Event";

@@ -14,8 +14,8 @@ import {
 	HelpCircle,
 } from "lucide-react";
 
-import { Task, Category, Priority } from "../types";
-import { PRIORITIES } from "../constants";
+import { Task, Category, Tag } from "../types";
+import { TAGS } from "../constants";
 import {
 	parseSmartInput,
 	formatDateToInput,
@@ -67,8 +67,8 @@ export default function TaskForm({
 	const [categoryId, setCategoryId] = useState(
 		initialTask?.categoryId || initialCatIdFromContext,
 	);
-	const [priority, setPriority] = useState<Priority>(
-		initialTask?.priority || "Medium",
+	const [tag, setTag] = useState<Tag>(
+		initialTask?.tag || "explore",
 	);
 	const [dueDate, setDueDate] = useState(initialTask?.dueDate || "");
 	const [startTime, setStartTime] = useState("");
@@ -80,7 +80,7 @@ export default function TaskForm({
 			setName(initialTask?.name || "");
 			setDescription(initialTask?.description || "");
 			setCategoryId(initialTask?.categoryId || initialCatIdFromContext);
-			setPriority(initialTask?.priority || "Medium");
+			setTag(initialTask?.tag || "explore");
 			setDueDate(initialTask?.dueDate || "");
 			setIsRecurring(initialTask?.isRecurring || defaultRecurring || false);
 			setRecurringIcon(initialTask?.recurringIcon || "Flame");
@@ -161,7 +161,7 @@ export default function TaskForm({
 			name: cleanName,
 			description: description.trim() || undefined,
 			categoryId,
-			priority,
+			tag,
 			dueDate:
 				dueDate || (startTime ? formatDateToInput(new Date()) : undefined),
 			isRecurring,
@@ -280,7 +280,7 @@ export default function TaskForm({
 														<div className="space-y-1.5 text-[10px] text-gray-300">
 															<p>
 																<span className="text-purple-300 font-mono font-bold">
-																	#work
+																	?work
 																</span>{" "}
 																→ Set category
 															</p>
@@ -320,17 +320,25 @@ export default function TaskForm({
 															</p>
 															<p>
 																<span className="text-red-300 font-mono font-bold">
-																	!!
+																	#quick
 																</span>
 																{" · "}
 																<span className="text-red-300 font-mono font-bold">
-																	!high
+																	#explore
+																</span>
+																{" · "}
+																<span className="text-red-300 font-mono font-bold">
+																	#finish
+																</span>
+																{" · "}
+																<span className="text-red-300 font-mono font-bold">
+																	#handle
 																</span>{" "}
-																→ Priority
+																→ Tag
 															</p>
 														</div>
 														<div className="mt-2 pt-2 border-t border-white/10 text-[9px] text-gray-500 italic leading-relaxed">
-															e.g. "Read book #study !today @3pm ~1.5h !!"
+															e.g. "Read book ?study !today @3pm ~1.5h #quick"
 														</div>
 													</motion.div>
 												)}
@@ -343,7 +351,7 @@ export default function TaskForm({
 										type="text"
 										value={name}
 										onChange={(e) => handleNameChange(e.target.value)}
-										placeholder='e.g. "Read book #study !today @3pm ~1h"'
+										placeholder='e.g. "Read book ?study !today @3pm ~1h #quick"'
 										className="w-full text-[15px] font-semibold bg-transparent border-b-2 border-gray-100 dark:border-gray-800 pb-2 focus:border-blue-500 outline-none transition-colors text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-700"
 									/>
 								</div>
@@ -396,34 +404,34 @@ export default function TaskForm({
 										</div>
 									</div>
 
-									{/* Priority */}
+									{/* Tag */}
 									<div>
 										<label className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500 mb-1.5">
 											<Flag className="w-3 h-3" />
-											Priority
+											Tag
 										</label>
 										<div className="flex gap-1.5">
-											{(["Low", "Medium", "High"] as Priority[]).map((p) => {
-												const pInfo = PRIORITIES.find(
-													(prev) => prev.label === p,
+											{(["quick", "explore", "finish", "handle"] as Tag[]).map((t) => {
+												const tInfo = TAGS.find(
+													(prev) => prev.label === t,
 												);
 												return (
 													<button
-														key={p}
+														key={t}
 														type="button"
-														onClick={() => setPriority(p)}
+														onClick={() => setTag(t)}
 														className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all border ${
-															priority === p
+															tag === t
 																? "bg-white dark:bg-gray-900 shadow-sm ring-1"
 																: "bg-gray-50 dark:bg-gray-900 border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
 														}`}
 														style={{
 															borderColor:
-																priority === p ? pInfo?.color : "transparent",
-															color: priority === p ? pInfo?.color : undefined,
+																tag === t ? tInfo?.color : "transparent",
+															color: tag === t ? tInfo?.color : undefined,
 														}}
 													>
-														{p}
+														{t}
 													</button>
 												);
 											})}

@@ -1,7 +1,7 @@
 import React from "react";
-import { Task, Category, Priority } from "../types";
+import { Task, Category, Tag } from "../types";
 import { CategoryIcon } from "./CategoryIcon";
-import { PRIORITIES } from "../constants";
+import { TAGS } from "../constants";
 import { formatDuration, formatDueDate } from "../utils";
 import {
 	Play,
@@ -59,7 +59,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 							Category
 						</th>
 						<th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-							Priority
+							Tag
 						</th>
 						<th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
 							Due Date
@@ -75,8 +75,8 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 				<tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
 					{tasks.map((task) => {
 						const category = categories.find((c) => c.id === task.categoryId);
-						const priorityInfo = PRIORITIES.find(
-							(p) => p.label === task.priority,
+						const tagInfo = TAGS.find(
+							(t) => t.label === task.tag,
 						);
 						const isActive = activeTaskId === task.id && timerActive;
 
@@ -125,9 +125,9 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 									<div className="flex items-center gap-1.5">
 										<div
 											className="w-1.5 h-1.5 rounded-full"
-											style={{ backgroundColor: priorityInfo?.color }}
+											style={{ backgroundColor: tagInfo?.color }}
 										/>
-										<span className="text-xs font-bold">{task.priority}</span>
+										<span className="text-xs font-bold">{task.tag}</span>
 									</div>
 								</td>
 								<td className="px-6 py-4 font-bold text-xs text-gray-400">
@@ -274,13 +274,13 @@ export const TaskGallery: React.FC<TaskGalleryProps> = ({
 										{category.name}
 									</div>
 								)}
-								{priorityInfo && (
+								{tagInfo && (
 									<div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-[9px] font-bold">
 										<div
 											className="w-1.5 h-1.5 rounded-full"
-											style={{ backgroundColor: priorityInfo.color }}
+											style={{ backgroundColor: tagInfo.color }}
 										/>
-										{task.priority}
+										{task.tag}
 									</div>
 								)}
 								{task.dueDate && (

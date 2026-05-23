@@ -1,4 +1,4 @@
-import { Priority } from "./types";
+import { Tag } from "./types";
 
 export function formatDuration(ms: number): string {
 	const seconds = Math.floor((ms / 1000) % 60);
@@ -68,7 +68,7 @@ export function parseSmartInput(input: string): {
 	cleanName: string;
 	categoryName?: string;
 	relativeDate?: Date;
-	priority?: Priority;
+	tag?: Tag;
 	isRecurring?: boolean;
 	recurringPattern?: "daily" | "weekly";
 	startTimeStr?: string;
@@ -77,17 +77,33 @@ export function parseSmartInput(input: string): {
 	let cleanName = input;
 	let categoryName: string | undefined;
 	let relativeDate: Date | undefined;
-	let priority: Priority | undefined;
+	let tag: Tag | undefined;
 	let isRecurring = false;
 	let recurringPattern: "daily" | "weekly" | undefined;
 	let startTimeStr: string | undefined;
 	let durationMs: number | undefined;
 
-	// Extract category (#tag)
-	const categoryMatch = input.match(/#(\w+)/);
+	// Extract tag (#quick, #explore, #finish, #handle)
+	const tagMatch = input.match(/#(quick|explore|finish|handle)/i);
+	if (tagMatch) {
+		const tagText = tagMatch[1].toLowerCase();
+		if (tagText === "quick") {
+			tag = "quick";
+		} else if (tagText === "explore") {
+			tag = "explore";
+		} else if (tagText === "finish") {
+			tag = "finish";
+		} else if (tagText === "handle") {
+			tag = "handle";
+		}
+		cleanName = cleanName.replace(/#(quick|explore|finish|handle)/gi, "").trim();
+	}
+
+	// Extract category (?tag)
+	const categoryMatch = input.match(/\?(\w+)/);
 	if (categoryMatch) {
 		categoryName = categoryMatch[1];
-		cleanName = cleanName.replace(/#\w+/g, "").trim();
+		cleanName = cleanName.replace(/\?\w+/g, "").trim();
 	}
 
 	// Extract recurring patterns (@daily, @weekly, etc.)
@@ -133,24 +149,20 @@ export function parseSmartInput(input: string): {
 		cleanName = cleanName.replace(/~(\d+(?:\.\d+)?)\s*(h|m|hr|min|hour|minute)?s?/gi, "").trim();
 	}
 
-	// Extract priority (!! or !high, !medium, !low)
-	const priorityMatch = input.match(
-		/!!(high|medium|low)?|!(high|med|medium|low)/i,
-	);
-	if (priorityMatch) {
-		const priorityText = (
-			priorityMatch[1] ||
-			priorityMatch[2] ||
-			"high"
-		).toLowerCase();
-		if (priorityText === "high" || priorityText === "!!") {
-			priority = "High";
-		} else if (priorityText === "medium" || priorityText === "med") {
-			priority = "Medium";
-		} else if (priorityText === "low") {
-			priority = "Low";
+	// Extract tag (#quick, #explore, #finish, #handle)
+	const tagMatch = input.match(/#(quick|explore|finish|handle)/i);
+	if (tagMatch) {
+		const tagText = tagMatch[1].toLowerCase();
+		if (tagText === "quick") {
+			tag = "quick";
+		} else if (tagText === "explore") {
+			tag = "explore";
+		} else if (tagText === "finish") {
+			tag = "finish";
+		} else if (tagText === "handle") {
+			tag = "handle";
 		}
-		cleanName = cleanName.replace(/!!|!(high|med|medium|low)/gi, "").trim();
+		cleanName = cleanName.replace(/#(quick|explore|finish|handle)/gi, "").trim();
 	}
 
 	// Extract time patterns (due dates)
@@ -224,7 +236,7 @@ export function parseSmartInput(input: string): {
 		cleanName,
 		categoryName,
 		relativeDate,
-		priority,
+		tag,
 		isRecurring,
 		recurringPattern,
 		startTimeStr,

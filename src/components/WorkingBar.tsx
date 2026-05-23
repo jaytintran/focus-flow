@@ -240,13 +240,13 @@ export default function WorkingBar({
 												</p>
 												<div className="space-y-1 text-gray-300">
 													<p>
-														<b className="text-white">#Category:</b> Use{" "}
+														<b className="text-white">?Category:</b> Use{" "}
 														<code className="bg-black/25 px-1 py-0.5 rounded text-purple-300 font-mono">
-															#work
+															?work
 														</code>{" "}
 														or{" "}
 														<code className="bg-black/25 px-1 py-0.5 rounded text-purple-300 font-mono">
-															#gym
+															?gym
 														</code>
 													</p>
 													<p>
@@ -284,18 +284,26 @@ export default function WorkingBar({
 														</code>
 													</p>
 													<p>
-														<b className="text-white">!Priority:</b> Use{" "}
+														<b className="text-white">#Tag:</b> Use{" "}
 														<code className="bg-black/25 px-1 py-0.5 rounded text-red-300 font-mono">
-															!!
-														</code>{" "}
-														or{" "}
+															#quick
+														</code>
+														{" · "}
 														<code className="bg-black/25 px-1 py-0.5 rounded text-red-300 font-mono">
-															!high
+															#explore
+														</code>
+														{" · "}
+														<code className="bg-black/25 px-1 py-0.5 rounded text-red-300 font-mono">
+															#finish
+														</code>
+														{" · "}
+														<code className="bg-black/25 px-1 py-0.5 rounded text-red-300 font-mono">
+															#handle
 														</code>
 													</p>
 												</div>
 												<div className="pt-1.5 border-t border-white/10 text-[9px] text-gray-400 italic">
-													Example: Code review #work !today @3pm ~1h !!
+													Example: Code review ?work !today @3pm ~1h #quick
 												</div>
 											</motion.div>
 										)}

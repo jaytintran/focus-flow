@@ -26,6 +26,7 @@ import { LayoutSwitcher } from "@/src/components/LayoutSwitcher";
 import { CategorySwitcher } from "./components/CategorySwitcher";
 import TaskForm from "./components/TaskForm";
 import JournalView from "./components/JournalView";
+import InboxView from "./components/InboxView";
 import WorkingBar from "./components/WorkingBar";
 import CategoryManager from "./components/CategoryManager";
 
@@ -68,6 +69,7 @@ export default function App() {
 	// Modals/View state
 	const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 	const [isJournalOpen, setIsJournalOpen] = useState(false);
+	const [isInboxOpen, setIsInboxOpen] = useState(false);
 	const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 	const [editingTask, setEditingTask] = useState<Task | null>(null);
 	const [taskModalDefaultRecurring, setTaskModalDefaultRecurring] =
@@ -405,7 +407,7 @@ export default function App() {
 			name: taskData.name || "New Task",
 			description: taskData.description,
 			categoryId: taskData.categoryId || initialCatId,
-			priority: taskData.priority || "Medium",
+			tag: taskData.tag || "explore",
 			spentTime: 0,
 			dueDate: taskData.dueDate,
 			completed: false,
@@ -460,7 +462,7 @@ export default function App() {
 			id: generateId(),
 			name: parsed.cleanName,
 			categoryId: catId,
-			priority: parsed.priority || "Medium",
+			tag: parsed.tag || "explore",
 			spentTime: 0,
 			dueDate: dateStr,
 			completed: false,
@@ -498,6 +500,55 @@ export default function App() {
 			setActiveTaskId(null);
 			setTimerActive(false);
 		}
+	};
+
+	const handleAddInboxTask = (name: string) => {
+		const parsed = parseSmartInput(name);
+		const { cleanName, relativeDate, tag, startTimeStr, durationMs } = parsed;
+
+		let startAt: number | undefined;
+		let durationVal: number | undefined;
+		let endAt: number | undefined;
+
+		if (startTimeStr) {
+			const dateStr = relativeDate
+				? formatDateToInput(relativeDate)
+				: formatDateToInput(new Date());
+			startAt = combineDateAndTime(dateStr, startTimeStr);
+
+			if (durationMs) {
+				durationVal = durationMs;
+				endAt = startAt + durationVal;
+			}
+		}
+
+		const newTask: Task = {
+			id: generateId(),
+			name: cleanName,
+			categoryId: "", // Empty for inbox
+			tag: tag || "explore",
+			spentTime: 0,
+			dueDate: relativeDate ? formatDateToInput(relativeDate) : undefined,
+			completed: false,
+			createdAt: Date.now(),
+			inbox: true,
+			startAt,
+			duration: durationVal,
+			endAt,
+		};
+		setTasks([newTask, ...tasks]);
+	};
+
+	const handleAssignCategory = (taskId: string, categoryId: string) => {
+		setTasks(
+			tasks.map((t) =>
+				t.id === taskId ? { ...t, categoryId, inbox: false } : t,
+			),
+		);
+	};
+
+	const handleUpdateInboxTask = (taskId: string, updates: Partial<Task>) => {
+		setTasks(tasks.map((t) => (t.id === taskId ? { ...t, ...updates } : t)));
 	};
 
 	const handleToggleComplete = (id: string) => {
@@ -657,6 +708,9 @@ export default function App() {
 
 	const { activeTasks, scheduledTasks, completedTasks } = useMemo(() => {
 		const filtered = tasks.filter((t) => {
+			// Exclude inbox tasks from main view
+			if (t.inbox) return false;
+
 			const matchesSearch = t.name
 				.toLowerCase()
 				.includes(searchQuery.toLowerCase());
@@ -761,7 +815,7 @@ export default function App() {
 								relativeDate,
 								startTimeStr,
 								durationMs,
-								priority,
+								tag,
 							} = parsed;
 							const id = generateId();
 
@@ -797,7 +851,7 @@ export default function App() {
 								id,
 								name: cleanName,
 								categoryId: finalCatId,
-								priority: priority || "Medium",
+								tag: tag || "explore",
 								spentTime: 0,
 								dueDate: dateStr,
 								completed: false,
@@ -945,7 +999,7 @@ export default function App() {
 									parsedQuickAdd &&
 									(parsedQuickAdd.categoryName ||
 										parsedQuickAdd.isRecurring ||
-										parsedQuickAdd.priority ||
+										parsedQuickAdd.tag ||
 										parsedQuickAdd.relativeDate) && (
 										<div className="absolute right-0 top-0 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none">
 											{parsedQuickAdd.categoryName && (
@@ -958,9 +1012,9 @@ export default function App() {
 													@{parsedQuickAdd.recurringPattern || "recurring"}
 												</span>
 											)}
-											{parsedQuickAdd.priority && (
+											{parsedQuickAdd.tag && (
 												<span className="text-[9px] px-2 py-0.5 rounded-full bg-orange-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">
-													!{parsedQuickAdd.priority.toLowerCase()}
+													!{parsedQuickAdd.tag.toLowerCase()}
 												</span>
 											)}
 											{parsedQuickAdd.relativeDate && (
@@ -1317,6 +1371,21 @@ export default function App() {
 
 			{/* Floating Action Buttons */}
 			<div className="fixed right-4 bottom-20 sm:right-6 sm:bottom-12 md:right-12 md:bottom-12 flex items-center gap-3 z-50">
+				{/* Inbox Toggle FAB */}
+				<motion.button
+					whileTap={{ scale: 0.95 }}
+					onClick={() => setIsInboxOpen(true)}
+					className={`w-14 h-14 sm:w-16 sm:h-16 rounded-[24px] shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 group ${
+						isInboxOpen
+							? "bg-purple-600 text-white shadow-purple-500/40"
+							: darkMode
+								? "bg-gray-800 text-gray-300 shadow-black/40 border border-gray-700"
+								: "bg-white text-gray-600 shadow-gray-400/30 border border-gray-200"
+					}`}
+				>
+					<Inbox className="w-6 h-6 sm:w-7 sm:h-7" />
+				</motion.button>
+
 				{/* Journal Toggle FAB */}
 				<motion.button
 					whileTap={{ scale: 0.95 }}
@@ -1413,6 +1482,22 @@ export default function App() {
 							setEditingTask(t);
 							setIsTaskModalOpen(true);
 						}}
+						darkMode={darkMode}
+					/>
+				)}
+			</AnimatePresence>
+
+			<AnimatePresence>
+				{isInboxOpen && (
+					<InboxView
+						isOpen={isInboxOpen}
+						onClose={() => setIsInboxOpen(false)}
+						tasks={tasks}
+						categories={categories}
+						onAddTask={handleAddInboxTask}
+						onAssignCategory={handleAssignCategory}
+						onUpdateTask={handleUpdateInboxTask}
+						onDeleteTask={handleDeleteTask}
 						darkMode={darkMode}
 					/>
 				)}

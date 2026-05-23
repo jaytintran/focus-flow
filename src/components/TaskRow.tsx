@@ -18,7 +18,7 @@ import {
 	formatScheduledTime,
 	formatScheduledDate,
 } from "../utils";
-import { PRIORITIES } from "../constants";
+import { TAGS } from "../constants";
 import { CategoryIcon } from "./CategoryIcon";
 
 const triggerHaptic = () => {
@@ -52,7 +52,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 	onReenter,
 	onDragStart,
 }) => {
-	const priorityInfo = PRIORITIES.find((p) => p.label === task.priority);
+	const tagInfo = TAGS.find((t) => t.label === task.tag);
 
 	const hasPlay = !task.completed;
 	const hasReenter = !!onReenter;
@@ -354,7 +354,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 										onClick={handleCardClick}
 									>
 										{/* PRIORITY CHIP */}
-										{priorityInfo && (
+										{tagInfo && (
 											<span
 												className={`text-[8px] px-1 py-0.5 rounded-full font-black uppercase tracking-wider shrink-0 ${
 													task.completed
@@ -370,7 +370,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 															}
 												}
 											>
-												{task.priority}
+												{task.tag}
 											</span>
 										)}
 
@@ -505,19 +505,19 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 							</div>
 						)}
 
-						{/* PRIORITY CHIP */}
-						{priorityInfo && (
+						{/* TAG CHIP */}
+						{tagInfo && (
 							<span
 								className="px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider shrink-0 text-[8px] shadow-sm backdrop-blur-sm"
 								style={{
 									backgroundColor: task.completed
 										? "rgba(156, 163, 175, 0.9)"
-										: `${priorityInfo.color}90`,
+										: `${tagInfo.color}90`,
 									color: "#fff",
-									border: `1px solid ${task.completed ? "rgba(156, 163, 175, 0.5)" : `${priorityInfo.color}`}`,
+									border: `1px solid ${task.completed ? "rgba(156, 163, 175, 0.5)" : `${tagInfo.color}`}`,
 								}}
 							>
-								{task.priority}
+								{task.tag}
 							</span>
 						)}
 					</div>
