@@ -4,7 +4,6 @@ import {
 	X,
 	Plus,
 	Trash2,
-	Palette,
 	Check,
 	Star,
 	Eye,
@@ -183,7 +182,7 @@ export default function CategoryManager({
 								className="space-y-3"
 							>
 								{categories.map((cat) => (
-									<Reorder.Item key={cat.id} value={cat}>
+									<Reorder.Item key={cat.id} value={cat} dragListener={false}>
 										<div
 											className={`p-4 rounded-3xl border ${darkMode ? "border-gray-800 bg-gray-800/50" : "border-gray-100 bg-gray-50"} ${cat.isHidden ? "opacity-50" : ""}`}
 										>
@@ -237,20 +236,27 @@ export default function CategoryManager({
 											) : (
 												<div className="flex items-center gap-3">
 													{/* Drag Handle */}
-													<div className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-700 hover:text-gray-400 transition-colors">
+													<Reorder.Item
+														value={cat}
+														as="div"
+														className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-700 hover:text-gray-400 transition-colors"
+													>
 														<GripVertical className="w-5 h-5" />
-													</div>
+													</Reorder.Item>
 
-													<div
-														className="p-3 rounded-2xl shrink-0"
+													{/* Icon - Clickable to edit */}
+													<button
+														onClick={() => setEditingId(cat.id)}
+														className="p-3 rounded-2xl shrink-0 hover:opacity-80 transition-opacity"
 														style={{ backgroundColor: `${cat.color}20` }}
+														title="Edit icon and color"
 													>
 														<CategoryIcon
 															name={cat.iconName}
 															className="w-5 h-5"
 															style={{ color: cat.color }}
 														/>
-													</div>
+													</button>
 
 													{/* Category Name - Editable */}
 													<div className="flex-1 min-w-0">
@@ -304,13 +310,6 @@ export default function CategoryManager({
 														<Star
 															className={`w-4 h-4 ${cat.isDefault ? "fill-current" : ""}`}
 														/>
-													</button>
-													<button
-														onClick={() => setEditingId(cat.id)}
-														className="p-2 text-gray-400 hover:text-blue-500 shrink-0"
-														title="Edit colors & icon"
-													>
-														<Palette className="w-4 h-4" />
 													</button>
 													<button
 														onClick={() => handleDelete(cat.id)}
