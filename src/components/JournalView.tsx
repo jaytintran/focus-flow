@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useRef } from "react";
-import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "motion/react";
+import React, { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import {
 	History,
 	Plus,
@@ -65,15 +65,6 @@ export default function JournalView({
 	const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
 	const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 	const [showTooltip, setShowTooltip] = useState(false);
-
-	const x = useMotionValue(0);
-	const opacity = useTransform(x, [0, 300], [1, 0.3]);
-
-	const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-		if (info.offset.x > 150) {
-			onClose();
-		}
-	};
 
 	const getLocalDateStr = (dateOrTime: Date | number) => {
 		const d =
@@ -360,11 +351,6 @@ export default function JournalView({
 			animate={{ x: 0 }}
 			exit={{ x: "100%" }}
 			transition={{ type: "spring", damping: 25, stiffness: 200 }}
-			drag="x"
-			dragConstraints={{ left: 0, right: 0 }}
-			dragElastic={{ left: 0, right: 0.5 }}
-			onDragEnd={handleDragEnd}
-			style={{ x, opacity }}
 			className={`fixed inset-0 z-[100] flex flex-col ${darkMode ? "bg-gray-950 text-white" : "bg-white text-gray-900"}`}
 		>
 			{/* Header */}
@@ -975,6 +961,19 @@ export default function JournalView({
 					</form>
 				</div>
 			</div>
+
+			{/* Mobile Back Button - Bottom Left */}
+			<button
+				onClick={onClose}
+				className={`md:hidden fixed bottom-6 left-6 z-[110] p-3 rounded-full shadow-lg transition-all active:scale-95 ${
+					darkMode
+						? "bg-gray-900 hover:bg-gray-800 text-white border border-gray-800"
+						: "bg-white hover:bg-gray-50 text-gray-900 border border-gray-200"
+				}`}
+				style={{ boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)" }}
+			>
+				<ChevronLeft className="w-5 h-5" />
+			</button>
 		</motion.div>
 	);
 }
