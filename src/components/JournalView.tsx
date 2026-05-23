@@ -132,6 +132,7 @@ export default function JournalView({
 			originalId: e.id,
 			isCompletedTask: false,
 			isScheduledActiveTask: false,
+			task: undefined as Task | undefined,
 		}));
 
 		return [...completedTasks, ...activeScheduledTasks, ...entries].sort(
