@@ -195,7 +195,9 @@ export default function InboxView({
 											initial={{ opacity: 0, y: 10 }}
 											animate={{ opacity: 1, y: 0 }}
 											exit={{ opacity: 0, y: -10 }}
-											className={`relative overflow-visible p-2 rounded-xl border transition-all ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-50 shadow-sm"}`}
+											className={`relative overflow-visible p-2 rounded-xl border transition-all ${
+												expandedDropdown?.taskId === task.id ? "z-50" : "z-10"
+											} ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-50 shadow-sm"}`}
 										>
 											{isEditing ? (
 												<div className="flex items-center gap-2">
@@ -401,12 +403,22 @@ export default function InboxView({
 														>
 															{task.name}
 														</p>
-														<button
-															onClick={() => handleStartEdit(task)}
-															className={`w-6 h-6 flex items-center justify-center ${darkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"} rounded-lg transition-colors shrink-0`}
-														>
-															<Edit3 className="w-3 h-3 text-gray-400" />
-														</button>
+														<div className="flex items-center gap-1 shrink-0">
+															<button
+																onClick={() => handleStartEdit(task)}
+																className={`w-6 h-6 flex items-center justify-center ${darkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"} rounded-lg transition-colors`}
+																title="Edit task"
+															>
+																<Edit3 className="w-3 h-3 text-gray-400" />
+															</button>
+															<button
+																onClick={() => onDeleteTask(task.id)}
+																className={`w-6 h-6 flex items-center justify-center ${darkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"} rounded-lg transition-colors`}
+																title="Delete task"
+															>
+																<X className="w-3 h-3 text-red-400 hover:text-red-500" />
+															</button>
+														</div>
 													</div>
 												</>
 											)}
