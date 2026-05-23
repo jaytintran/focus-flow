@@ -165,7 +165,7 @@ export const HabitRow: React.FC<HabitRowProps> = ({
 								return (
 									<div
 										key={day}
-										className="w-[5px] h-[2px] rounded-t-full transition-all"
+										className="w-[10px] h-[2px] transition-all"
 										style={{
 											backgroundColor: done
 												? habitColor
