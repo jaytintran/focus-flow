@@ -381,77 +381,119 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 
 				{/* MINI MODE: Floating chips on top-right border */}
 				{isMini && (
-					<div className="absolute -top-2 right-0 z-30 flex flex-row-reverse flex-wrap items-start gap-1 justify-end max-w-full pl-8">
-						{/* SPENT TIME CHIP */}
-						<div
-							className={`flex items-center gap-1 font-mono px-1.5 py-0.5 rounded-md border text-[8px] shadow-sm backdrop-blur-sm ${
-								isActive
-									? "bg-orange-500/90 border-orange-400 text-white font-bold"
-									: "bg-blue-600/90 border-blue-500 text-white"
-							}`}
-						>
-							<Clock className="w-2 h-2" />
-							{formatDuration(task.spentTime)}
-						</div>
-
-						{/* SCHEDULED / DUE DATE CHIP */}
-						{task.startAt && (
-							<div className="flex items-center gap-1 bg-blue-50/90 dark:bg-blue-950/90 backdrop-blur-sm text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/40 shadow-sm text-[8px]">
-								<Calendar className="w-2 h-2" />
-								<span>
-									{task.dueDate ? formatScheduledDate(task.dueDate) : "S"}:{" "}
-									{formatScheduledTime(task.startAt, task.endAt, task.duration)}
-								</span>
-							</div>
-						)}
-						{!task.startAt && task.dueDate && (
+					<>
+						<div className="absolute -top-2 right-0 z-30 flex flex-row-reverse flex-wrap items-start gap-1 justify-end max-w-full pl-8">
+							{/* SPENT TIME CHIP */}
 							<div
-								className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border shadow-sm text-[8px] backdrop-blur-sm ${
-									new Date(task.dueDate) < new Date() && !task.completed
-										? "bg-red-500/90 border-red-400 text-white font-bold"
-										: "bg-gray-100/90 dark:bg-gray-800/90 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400"
+								className={`flex items-center gap-1 font-mono px-1.5 py-0.5 rounded-md border text-[8px] shadow-sm backdrop-blur-sm ${
+									isActive
+										? "bg-orange-500/90 border-orange-400 text-white font-bold"
+										: "bg-blue-600/90 border-blue-500 text-white"
 								}`}
 							>
-								<Calendar className="w-2 h-2" />
-								{formatDueDate(task.dueDate)}
+								<Clock className="w-2 h-2" />
+								{formatDuration(task.spentTime)}
 							</div>
-						)}
 
-						{/* CATEGORY CHIP */}
-						{category && (
-							<div
-								className="flex items-center gap-1 px-1.5 py-0.5 rounded-md border shadow-sm text-[8px] backdrop-blur-sm uppercase"
-								style={{
-									backgroundColor: task.completed
-										? "rgba(156, 163, 175, 0.9)"
-										: `${category.color}20`,
-									borderColor: task.completed
-										? "rgba(156, 163, 175, 0.5)"
-										: `${category.color}40`,
-									color: task.completed ? "#fff" : category.color,
+							{/* SCHEDULED / DUE DATE CHIP */}
+							{task.startAt && (
+								<div className="flex items-center gap-1 bg-blue-50/90 dark:bg-blue-950/90 backdrop-blur-sm text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/40 shadow-sm text-[8px]">
+									<Calendar className="w-2 h-2" />
+									<span>
+										{task.dueDate ? formatScheduledDate(task.dueDate) : "S"}:{" "}
+										{formatScheduledTime(task.startAt, task.endAt, task.duration)}
+									</span>
+								</div>
+							)}
+							{!task.startAt && task.dueDate && (
+								<div
+									className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border shadow-sm text-[8px] backdrop-blur-sm ${
+										new Date(task.dueDate) < new Date() && !task.completed
+											? "bg-red-500/90 border-red-400 text-white font-bold"
+											: "bg-gray-100/90 dark:bg-gray-800/90 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400"
+									}`}
+								>
+									<Calendar className="w-2 h-2" />
+									{formatDueDate(task.dueDate)}
+								</div>
+							)}
+
+							{/* CATEGORY CHIP */}
+							{category && (
+								<div
+									className="flex items-center gap-1 px-1.5 py-0.5 rounded-md border shadow-sm text-[8px] backdrop-blur-sm uppercase"
+									style={{
+										backgroundColor: task.completed
+											? "rgba(156, 163, 175, 0.9)"
+											: `${category.color}90`,
+										borderColor: task.completed
+											? "rgba(156, 163, 175, 0.5)"
+											: `${category.color}`,
+										color: "#fff",
+									}}
+								>
+									<CategoryIcon name={category.iconName} className="w-2 h-2" />
+									{category.name}
+								</div>
+							)}
+
+							{/* PRIORITY CHIP */}
+							{priorityInfo && (
+								<span
+									className="px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider shrink-0 text-[8px] shadow-sm backdrop-blur-sm"
+									style={{
+										backgroundColor: task.completed
+											? "rgba(156, 163, 175, 0.9)"
+											: `${priorityInfo.color}90`,
+										color: "#fff",
+										border: `1px solid ${task.completed ? "rgba(156, 163, 175, 0.5)" : `${priorityInfo.color}`}`,
+									}}
+								>
+									{task.priority}
+								</span>
+							)}
+						</div>
+
+						{/* Compact content */}
+						<div className="flex items-center gap-2 min-w-0 flex-1">
+							<button
+								onClick={(e) => {
+									e.stopPropagation();
+									triggerHaptic();
+									onToggleComplete(task.id);
 								}}
+								className="shrink-0 text-gray-400 hover:text-blue-500 transition-colors cursor-pointer"
 							>
-								<CategoryIcon name={category.iconName} className="w-2 h-2" />
-								{category.name}
+								{task.completed ? (
+									<CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+								) : (
+									<Circle className="w-3.5 h-3.5" />
+								)}
+							</button>
+
+							{category && (
+								<div
+									className="flex items-center justify-center p-0.5 rounded shrink-0"
+									style={{
+										color: task.completed ? "#9ca3af" : category.color,
+										backgroundColor: task.completed
+											? "rgba(156, 163, 175, 0.15)"
+											: `${category.color}15`,
+									}}
+								>
+									<CategoryIcon name={category.iconName} className="w-3 h-3" />
+								</div>
+							)}
+
+							<div className="flex-1 min-w-0" onClick={handleCardClick}>
+								<h3
+									className={`text-xs font-bold truncate ${task.completed ? "line-through text-gray-400" : "text-gray-900 dark:text-white"}`}
+								>
+									{task.name}
+								</h3>
 							</div>
-						)}
-
-						{/* PRIORITY CHIP */}
-						{priorityInfo && (
-							<span
-								className="px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider shrink-0 text-[8px] shadow-sm backdrop-blur-sm"
-								style={{
-									backgroundColor: task.completed
-										? "rgba(156, 163, 175, 0.9)"
-										: `${priorityInfo.color}30`,
-									color: task.completed ? "#fff" : priorityInfo.color,
-									border: `1px solid ${task.completed ? "rgba(156, 163, 175, 0.5)" : `${priorityInfo.color}50`}`,
-								}}
-							>
-								{task.priority}
-							</span>
-						)}
-					</div>
+						</div>
+					</>
 				)}
 			</motion.div>
 		</div>
