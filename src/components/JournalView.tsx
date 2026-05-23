@@ -21,7 +21,7 @@ import {
 	ArrowLeftIcon,
 } from "lucide-react";
 import { JournalEntry, Task, JournalType, Category } from "../types";
-import { DEFAULT_CATEGORIES } from "../constants";
+import { DEFAULT_CATEGORIES, TAGS } from "../constants";
 import { generateId, formatScheduledTime, formatScheduledDate } from "../utils";
 import { CategoryIcon } from "./CategoryIcon";
 
@@ -694,6 +694,23 @@ export default function JournalView({
 																			{category.name}
 																		</div>
 																	)}
+
+																	{/* TAG CHIP */}
+																	{item.task?.tag && (() => {
+																		const tagInfo = TAGS.find((t) => t.label === item.task?.tag);
+																		return tagInfo ? (
+																			<span
+																				className="px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider shrink-0 text-[8px] shadow-sm backdrop-blur-sm"
+																				style={{
+																					backgroundColor: `${tagInfo.color}90`,
+																					color: "#fff",
+																					border: `1px solid ${tagInfo.color}`,
+																				}}
+																			>
+																				{item.task.tag}
+																			</span>
+																		) : null;
+																	})()}
 																</div>
 
 																{/* Compact content */}
@@ -924,6 +941,23 @@ export default function JournalView({
 																				{category.name}
 																			</div>
 																		)}
+
+																		{/* TAG CHIP */}
+																		{item.task?.tag && (() => {
+																			const tagInfo = TAGS.find((t) => t.label === item.task?.tag);
+																			return tagInfo ? (
+																				<span
+																					className="px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider shrink-0 text-[8px] shadow-sm backdrop-blur-sm"
+																					style={{
+																						backgroundColor: `${tagInfo.color}90`,
+																						color: "#fff",
+																						border: `1px solid ${tagInfo.color}`,
+																					}}
+																				>
+																					{item.task.tag}
+																				</span>
+																			) : null;
+																		})()}
 																	</div>
 
 																	{/* Compact content */}

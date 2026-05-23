@@ -353,7 +353,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 										className="flex flex-wrap items-center gap-2 text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
 										onClick={handleCardClick}
 									>
-										{/* PRIORITY CHIP */}
+										{/* TAG CHIP */}
 										{tagInfo && (
 											<span
 												className={`text-[8px] px-1 py-0.5 rounded-full font-black uppercase tracking-wider shrink-0 ${
@@ -365,8 +365,8 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 													task.completed
 														? {}
 														: {
-																backgroundColor: `${priorityInfo.color}20`,
-																color: priorityInfo.color,
+																backgroundColor: `${tagInfo.color}20`,
+																color: tagInfo.color,
 															}
 												}
 											>
