@@ -60,9 +60,9 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 
 	const isCompact = viewMode === "compact";
 	const isMini = viewMode === "mini";
-	const buttonWidth = isCompact ? 44 : 48;
-	const gap = isCompact ? 8 : 10;
-	const padding = isCompact ? 10 : 16;
+	const buttonWidth = isCompact ? 44 : isMini ? 40 : 48;
+	const gap = isCompact ? 8 : isMini ? 6 : 10;
+	const padding = isCompact ? 10 : isMini ? 8 : 16;
 	// Disable swipe when task is active - only show border indicator
 	const dragLimit = isActive
 		? 0
@@ -152,11 +152,11 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 							closeSwipe();
 						}}
 						className={`flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all ${
-							isCompact ? "w-11 h-11 rounded-xl" : "w-12 h-12 rounded-2xl"
+							isCompact ? "w-11 h-11 rounded-xl" : isMini ? "w-10 h-10 rounded-lg" : "w-12 h-12 rounded-2xl"
 						}`}
 						title="Delete task"
 					>
-						<Trash2 className={isCompact ? "w-4.5 h-4.5" : "w-5 h-5"} />
+						<Trash2 className={isCompact ? "w-4.5 h-4.5" : isMini ? "w-4 h-4" : "w-5 h-5"} />
 					</button>
 
 					{onReenter && (
@@ -168,11 +168,11 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 								closeSwipe();
 							}}
 							className={`flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all ${
-								isCompact ? "w-11 h-11 rounded-xl" : "w-12 h-12 rounded-2xl"
+								isCompact ? "w-11 h-11 rounded-xl" : isMini ? "w-10 h-10 rounded-lg" : "w-12 h-12 rounded-2xl"
 							}`}
 							title="Re-enter task"
 						>
-							<RotateCcw className={isCompact ? "w-4.5 h-4.5" : "w-5 h-5"} />
+							<RotateCcw className={isCompact ? "w-4.5 h-4.5" : isMini ? "w-4 h-4" : "w-5 h-5"} />
 						</button>
 					)}
 
@@ -185,14 +185,16 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 								closeSwipe();
 							}}
 							className={`flex items-center justify-center transition-all shadow-sm ${
-								isCompact ? "w-11 h-11 rounded-xl" : "w-12 h-12 rounded-2xl"
+								isCompact ? "w-11 h-11 rounded-xl" : isMini ? "w-10 h-10 rounded-lg" : "w-12 h-12 rounded-2xl"
 							} bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-100 dark:border-blue-900/50`}
 						>
 							<Play
 								className={
 									isCompact
 										? "w-4.5 h-4.5 fill-current"
-										: "w-5 h-5 fill-current"
+										: isMini
+											? "w-4 h-4 fill-current"
+											: "w-5 h-5 fill-current"
 								}
 							/>
 						</button>
