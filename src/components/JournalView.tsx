@@ -18,6 +18,7 @@ import {
 	ChevronRight,
 	ChevronDown,
 	Wand2,
+	ArrowLeftIcon,
 } from "lucide-react";
 import { JournalEntry, Task, JournalType, Category } from "../types";
 import { DEFAULT_CATEGORIES } from "../constants";
@@ -825,6 +826,7 @@ export default function JournalView({
 						<div
 							className={`p-2 rounded-[24px] border transition-all flex flex-col gap-2 ${darkMode ? "bg-gray-900 border-gray-800" : "bg-gray-50 border-gray-100"}`}
 						>
+							{/* Type Selector Pill Bar */}
 							<div className="flex items-center justify-between gap-2 px-2 pt-1 border-b border-gray-100 dark:border-gray-800/60 pb-2">
 								<div className="flex items-center gap-2">
 									<button
@@ -842,6 +844,15 @@ export default function JournalView({
 										Quick Log
 									</button>
 								</div>
+
+								{/* Mobile Back Button */}
+								<button
+									onClick={onClose}
+									className={`md:hidden p-3 rounded-full shadow-lg transition-all active:scale-95`}
+									style={{ boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)" }}
+								>
+									<ArrowLeftIcon className="w-5 h-5" />
+								</button>
 							</div>
 
 							{/* Category Selector Pill Bar */}
@@ -884,6 +895,7 @@ export default function JournalView({
 								})}
 							</div>
 
+							{/* Input Bar */}
 							<div className="flex items-center gap-3 pr-2">
 								<input
 									type="text"
@@ -961,19 +973,6 @@ export default function JournalView({
 					</form>
 				</div>
 			</div>
-
-			{/* Mobile Back Button - Bottom Left */}
-			<button
-				onClick={onClose}
-				className={`md:hidden fixed bottom-6 left-6 z-[110] p-3 rounded-full shadow-lg transition-all active:scale-95 ${
-					darkMode
-						? "bg-gray-900 hover:bg-gray-800 text-white border border-gray-800"
-						: "bg-white hover:bg-gray-50 text-gray-900 border border-gray-200"
-				}`}
-				style={{ boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)" }}
-			>
-				<ChevronLeft className="w-5 h-5" />
-			</button>
 		</motion.div>
 	);
 }
