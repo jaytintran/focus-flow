@@ -4,7 +4,7 @@ import {
 	X,
 	Calendar,
 	Flag,
-	Tag,
+	Tag as TagIcon,
 	AlignLeft,
 	Wand2,
 	RefreshCw,
@@ -376,7 +376,7 @@ export default function TaskForm({
 									{/* Category */}
 									<div>
 										<label className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500 mb-1.5">
-											<Tag className="w-3 h-3" />
+											<TagIcon className="w-3 h-3" />
 											Category
 										</label>
 										<div className="flex flex-wrap gap-1.5">
