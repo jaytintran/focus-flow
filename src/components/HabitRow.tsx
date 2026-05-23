@@ -131,11 +131,11 @@ export const HabitRow: React.FC<HabitRowProps> = ({
 						}`}
 						style={isCompletedToday ? { backgroundColor: habitColor } : {}}
 					>
-						<CategoryIcon name={habit.recurringIcon} className="w-4 h-4" />
+						<CategoryIcon name={habit.recurringIcon} className="w-3 h-3" />
 
 						{streak > 0 && (
 							<span
-								className={`absolute -top-1 -right-1 min-w-[14px] h-[14px] px-[3px] rounded-full text-[7px] font-black flex items-center justify-center shadow-sm text-white border-[1.5px] ${
+								className={`absolute -top-1.5 -right-2 min-w-[14px] h-[14px] px-[3px] rounded-full text-[7px] font-black flex items-center justify-center shadow-sm text-white border-[1.5px] ${
 									darkMode ? "border-gray-900" : "border-white"
 								} z-10`}
 								style={{ backgroundColor: habitColor }}

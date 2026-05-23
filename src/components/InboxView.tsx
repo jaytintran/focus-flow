@@ -130,7 +130,7 @@ export default function InboxView({
 				>
 					{/* Header */}
 					<div
-						className={`px-6 py-6 border-b flex items-center justify-between ${darkMode ? "border-gray-800 bg-gray-950/80" : "border-gray-100 bg-white/80"} backdrop-blur-md sticky top-0 z-10`}
+						className={`app-header px-6 py-6 border-b flex items-center justify-between ${darkMode ? "border-gray-800 bg-gray-950/80" : "border-gray-100 bg-white/80"} backdrop-blur-md sticky top-0 z-10`}
 					>
 						<div className="flex items-center gap-4">
 							<div>
@@ -320,13 +320,18 @@ export default function InboxView({
 																					<button
 																						key={t.label}
 																						onClick={() =>
-																							handleTagChange(task.id, t.label as Tag)
+																							handleTagChange(
+																								task.id,
+																								t.label as Tag,
+																							)
 																						}
 																						className={`w-full flex items-center gap-2 px-2 py-1.5 ${darkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"} rounded-lg transition-colors text-left`}
 																					>
 																						<div
 																							className="w-2 h-2 rounded-full"
-																							style={{ backgroundColor: t.color }}
+																							style={{
+																								backgroundColor: t.color,
+																							}}
 																						/>
 																						<span
 																							className={`text-[11px] font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
@@ -373,7 +378,10 @@ export default function InboxView({
 																					type="date"
 																					value={task.dueDate}
 																					onChange={(e) =>
-																						handleDateChange(task.id, e.target.value)
+																						handleDateChange(
+																							task.id,
+																							e.target.value,
+																						)
 																					}
 																					className={`w-full ${darkMode ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-50 border-gray-200 text-gray-900"} border rounded-lg px-2 py-1.5 text-[11px] focus:outline-none focus:ring-2 focus:ring-blue-500`}
 																				/>
@@ -430,9 +438,7 @@ export default function InboxView({
 					</div>
 
 					{/* Mobile Back Button */}
-					<div
-						className={`md:hidden fixed bottom-6 right-6 z-50`}
-					>
+					<div className={`md:hidden fixed bottom-6 right-6 z-50`}>
 						<button
 							onClick={onClose}
 							className="p-4 rounded-full bg-purple-600 text-white shadow-2xl hover:bg-purple-700 transition-all active:scale-95"

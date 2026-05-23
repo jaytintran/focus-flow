@@ -67,9 +67,7 @@ export default function TaskForm({
 	const [categoryId, setCategoryId] = useState(
 		initialTask?.categoryId || initialCatIdFromContext,
 	);
-	const [tag, setTag] = useState<Tag>(
-		initialTask?.tag || "explore",
-	);
+	const [tag, setTag] = useState<Tag>(initialTask?.tag || "explore");
 	const [dueDate, setDueDate] = useState(initialTask?.dueDate || "");
 	const [startTime, setStartTime] = useState("");
 	const [duration, setDuration] = useState("");
@@ -411,30 +409,30 @@ export default function TaskForm({
 											Tag
 										</label>
 										<div className="flex gap-1.5">
-											{(["quick", "explore", "finish", "handle"] as Tag[]).map((t) => {
-												const tInfo = TAGS.find(
-													(prev) => prev.label === t,
-												);
-												return (
-													<button
-														key={t}
-														type="button"
-														onClick={() => setTag(t)}
-														className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all border ${
-															tag === t
-																? "bg-white dark:bg-gray-900 shadow-sm ring-1"
-																: "bg-gray-50 dark:bg-gray-900 border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-														}`}
-														style={{
-															borderColor:
-																tag === t ? tInfo?.color : "transparent",
-															color: tag === t ? tInfo?.color : undefined,
-														}}
-													>
-														{t}
-													</button>
-												);
-											})}
+											{(["quick", "explore", "finish", "handle"] as Tag[]).map(
+												(t) => {
+													const tInfo = TAGS.find((prev) => prev.label === t);
+													return (
+														<button
+															key={t}
+															type="button"
+															onClick={() => setTag(t)}
+															className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all border uppercase ${
+																tag === t
+																	? "bg-white dark:bg-gray-900 shadow-sm ring-1"
+																	: "bg-gray-50 dark:bg-gray-900 border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+															}`}
+															style={{
+																borderColor:
+																	tag === t ? tInfo?.color : "transparent",
+																color: tag === t ? tInfo?.color : undefined,
+															}}
+														>
+															{t}
+														</button>
+													);
+												},
+											)}
 										</div>
 									</div>
 								</div>
