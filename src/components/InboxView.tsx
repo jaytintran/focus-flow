@@ -8,8 +8,10 @@ import {
 	Check,
 	Calendar,
 	Clock,
+	Inbox as InboxIcon,
+	ArrowLeft,
 } from "lucide-react";
-import { Task, Category } from "../types";
+import { Task, Category, Tag } from "../types";
 import { CategoryIcon } from "./CategoryIcon";
 import { TAGS } from "../constants";
 import {
@@ -45,9 +47,10 @@ export default function InboxView({
 	const [quickAddValue, setQuickAddValue] = useState("");
 	const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState("");
-	const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(
-		null,
-	);
+	const [expandedDropdown, setExpandedDropdown] = useState<{
+		taskId: string;
+		type: "category" | "tag" | "date" | "time";
+	} | null>(null);
 
 	const inboxTasks = tasks.filter((t) => t.inbox && !t.completed);
 
@@ -105,225 +108,327 @@ export default function InboxView({
 		setEditValue("");
 	};
 
+	const handleTagChange = (taskId: string, tag: Tag) => {
+		onUpdateTask(taskId, { tag });
+		setExpandedDropdown(null);
+	};
+
+	const handleDateChange = (taskId: string, dateStr: string) => {
+		onUpdateTask(taskId, { dueDate: dateStr });
+		setExpandedDropdown(null);
+	};
+
 	return (
 		<AnimatePresence>
 			{isOpen && (
-				<>
-					{/* Backdrop */}
-					<motion.div
-						initial={{ opacity: 0 }}
-						animate={{ opacity: 1 }}
-						exit={{ opacity: 0 }}
-						className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
-						onClick={onClose}
-					/>
-
-					{/* Sheet */}
-					<motion.div
-						initial={{ y: "100%" }}
-						animate={{ y: 0 }}
-						exit={{ y: "100%" }}
-						transition={{ type: "spring", damping: 28, stiffness: 320 }}
-						className="fixed inset-x-0 bottom-0 bg-white dark:bg-gray-950 rounded-t-3xl z-[70] max-h-[92vh] flex flex-col shadow-2xl"
+				<motion.div
+					initial={{ x: "100%" }}
+					animate={{ x: 0 }}
+					exit={{ x: "100%" }}
+					transition={{ type: "spring", damping: 25, stiffness: 200 }}
+					className={`fixed inset-0 z-[100] flex flex-col ${darkMode ? "bg-gray-950 text-white" : "bg-white text-gray-900"}`}
+				>
+					{/* Header */}
+					<div
+						className={`px-6 py-6 border-b flex items-center justify-between ${darkMode ? "border-gray-800 bg-gray-950/80" : "border-gray-100 bg-white/80"} backdrop-blur-md sticky top-0 z-10`}
 					>
-						{/* Header */}
-						<div className="flex-none px-5 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
-							<div className="w-9 h-1 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-3" />
-							<div className="flex items-center gap-3">
-								<button
-									type="button"
-									onClick={onClose}
-									className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0"
-								>
-									<X className="w-4 h-4 text-gray-400" />
-								</button>
-								<h2 className="flex-1 text-[15px] font-black text-gray-900 dark:text-white tracking-tight">
-									Inbox ({inboxTasks.length})
-								</h2>
+						<div className="flex items-center gap-4">
+							<div>
+								<h2 className="text-xl font-black">Inbox</h2>
+								<p className="text-[10px] uppercase font-bold tracking-widest text-purple-500">
+									Quick Capture
+								</p>
 							</div>
 						</div>
 
-						{/* Quick Add */}
-						<div className="flex-none px-5 py-3 border-b border-gray-100 dark:border-gray-800">
-							<form onSubmit={handleQuickAdd} className="flex gap-2">
-								<input
-									type="text"
-									value={quickAddValue}
-									onChange={(e) => setQuickAddValue(e.target.value)}
-									placeholder="Quick capture... !today @3pm ~1h #quick"
-									className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600"
-								/>
-								<button
-									type="submit"
-									className="w-9 h-9 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors shrink-0"
-								>
-									<Plus className="w-4 h-4" />
-								</button>
-							</form>
+						<div className="flex items-center gap-2">
+							<div
+								className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase text-purple-500 ${darkMode ? "bg-purple-500/10" : "bg-purple-50"}`}
+							>
+								<InboxIcon className="w-3 h-3" />
+								{inboxTasks.length} Tasks
+							</div>
 						</div>
+					</div>
 
-						{/* Task List */}
-						<div className="flex-1 overflow-y-auto px-5 py-3">
+					{/* Quick Add Bar */}
+					<div
+						className={`px-6 py-3 border-b ${darkMode ? "border-gray-800/80 bg-gray-950/40" : "border-gray-100 bg-gray-50/50"}`}
+					>
+						<form onSubmit={handleQuickAdd} className="flex gap-2">
+							<input
+								type="text"
+								value={quickAddValue}
+								onChange={(e) => setQuickAddValue(e.target.value)}
+								placeholder="Quick capture... !today @3pm ~1h #quick"
+								className={`flex-1 ${darkMode ? "bg-gray-900 border-gray-800 text-white placeholder-gray-600" : "bg-white border-gray-200 text-gray-900 placeholder-gray-400"} border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all`}
+							/>
+							<button
+								type="submit"
+								className="w-9 h-9 flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors shrink-0"
+							>
+								<Plus className="w-4 h-4" />
+							</button>
+						</form>
+					</div>
+
+					{/* Task List */}
+					<div className="flex-1 overflow-y-auto px-6 py-8 no-scrollbar">
+						<div className="max-w-2xl mx-auto space-y-3">
 							{inboxTasks.length === 0 ? (
 								<div className="flex flex-col items-center justify-center py-12 text-gray-400">
 									<div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
-										<Plus className="w-8 h-8" />
+										<InboxIcon className="w-8 h-8" />
 									</div>
 									<p className="text-sm font-semibold">Inbox is empty</p>
 									<p className="text-xs mt-1">Quick capture tasks here</p>
 								</div>
 							) : (
-								<div className="space-y-2">
-									{inboxTasks.map((task) => {
-										const isEditing = editingTaskId === task.id;
-										const tagInfo = TAGS.find((t) => t.label === task.tag);
+								inboxTasks.map((task) => {
+									const isEditing = editingTaskId === task.id;
+									const tagInfo = TAGS.find((t) => t.label === task.tag);
 
-										return (
-											<motion.div
-												key={task.id}
-												layout
-												initial={{ opacity: 0, y: 10 }}
-												animate={{ opacity: 1, y: 0 }}
-												exit={{ opacity: 0, y: -10 }}
-												className="relative bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-3"
-											>
-												{isEditing ? (
-													<div className="flex items-center gap-2">
-														<input
-															autoFocus
-															type="text"
-															value={editValue}
-															onChange={(e) => setEditValue(e.target.value)}
-															onKeyDown={(e) => {
-																if (e.key === "Enter") {
-																	handleSaveEdit(task.id);
-																} else if (e.key === "Escape") {
-																	handleCancelEdit();
-																}
-															}}
-															className="flex-1 bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-2 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
-														/>
-														<button
-															onClick={() => handleSaveEdit(task.id)}
-															className="w-7 h-7 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-														>
-															<Check className="w-3.5 h-3.5" />
-														</button>
-														<button
-															onClick={handleCancelEdit}
-															className="w-7 h-7 flex items-center justify-center bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
-														>
-															<X className="w-3.5 h-3.5" />
-														</button>
-													</div>
-												) : (
-													<>
-														<div className="flex items-start gap-2 mb-2">
-															<p className="flex-1 text-[13px] font-semibold text-gray-900 dark:text-white leading-snug">
-																{task.name}
-															</p>
+									return (
+										<motion.div
+											key={task.id}
+											layout
+											initial={{ opacity: 0, y: 10 }}
+											animate={{ opacity: 1, y: 0 }}
+											exit={{ opacity: 0, y: -10 }}
+											className={`relative overflow-visible p-2 rounded-xl border transition-all ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-50 shadow-sm"}`}
+										>
+											{isEditing ? (
+												<div className="flex items-center gap-2">
+													<input
+														autoFocus
+														type="text"
+														value={editValue}
+														onChange={(e) => setEditValue(e.target.value)}
+														onKeyDown={(e) => {
+															if (e.key === "Enter") {
+																handleSaveEdit(task.id);
+															} else if (e.key === "Escape") {
+																handleCancelEdit();
+															}
+														}}
+														className={`flex-1 ${darkMode ? "bg-gray-950 border-gray-700 text-white" : "bg-white border-gray-300 text-gray-900"} border rounded-lg px-2 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-purple-500`}
+													/>
+													<button
+														onClick={() => handleSaveEdit(task.id)}
+														className="w-7 h-7 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+													>
+														<Check className="w-3.5 h-3.5" />
+													</button>
+													<button
+														onClick={handleCancelEdit}
+														className={`w-7 h-7 flex items-center justify-center ${darkMode ? "bg-gray-700 hover:bg-gray-600 text-gray-300" : "bg-gray-300 hover:bg-gray-400 text-gray-700"} rounded-lg transition-colors`}
+													>
+														<X className="w-3.5 h-3.5" />
+													</button>
+												</div>
+											) : (
+												<>
+													{/* Floating chips on top-right border */}
+													<div className="absolute -top-2 right-0 z-30 flex flex-row-reverse flex-wrap items-start gap-1 justify-end max-w-full pl-8">
+														{/* Category Assign Chip */}
+														<div className="relative">
 															<button
-																onClick={() => handleStartEdit(task)}
-																className="w-6 h-6 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors shrink-0"
+																onClick={() =>
+																	setExpandedDropdown(
+																		expandedDropdown?.taskId === task.id &&
+																			expandedDropdown?.type === "category"
+																			? null
+																			: { taskId: task.id, type: "category" },
+																	)
+																}
+																className="flex items-center gap-1 px-1.5 py-0.5 bg-purple-600/90 backdrop-blur-sm border border-purple-500 rounded-md shadow-sm text-[8px] font-bold text-white hover:bg-purple-700/90 transition-colors"
 															>
-																<Edit3 className="w-3 h-3 text-gray-400" />
+																<span>Assign Category</span>
+																<ChevronDown className="w-2.5 h-2.5" />
 															</button>
-														</div>
 
-														{/* Metadata chips */}
-														<div className="flex flex-wrap items-center gap-1.5">
-															{/* Category Assign Button */}
-															<div className="relative">
-																<button
-																	onClick={() =>
-																		setExpandedCategoryId(
-																			expandedCategoryId === task.id
-																				? null
-																				: task.id,
-																		)
-																	}
-																	className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-full text-[9px] font-bold text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
-																>
-																	<span>Assign Category</span>
-																	<ChevronDown className="w-2.5 h-2.5" />
-																</button>
-
-																{/* Category Dropdown */}
-																<AnimatePresence>
-																	{expandedCategoryId === task.id && (
+															<AnimatePresence>
+																{expandedDropdown?.taskId === task.id &&
+																	expandedDropdown?.type === "category" && (
 																		<motion.div
 																			initial={{ opacity: 0, y: -4 }}
 																			animate={{ opacity: 1, y: 0 }}
 																			exit={{ opacity: 0, y: -4 }}
-																			className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg z-10 p-2 min-w-[140px]"
+																			className={`absolute right-0 top-full mt-1 ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"} border rounded-xl shadow-lg z-40 p-2 min-w-[140px]`}
 																		>
 																			{categories.map((cat) => (
 																				<button
 																					key={cat.id}
 																					onClick={() => {
 																						onAssignCategory(task.id, cat.id);
-																						setExpandedCategoryId(null);
+																						setExpandedDropdown(null);
 																					}}
-																					className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-left"
+																					className={`w-full flex items-center gap-2 px-2 py-1.5 ${darkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"} rounded-lg transition-colors text-left`}
 																				>
 																					<CategoryIcon
 																						name={cat.iconName}
 																						className="w-3 h-3"
 																						style={{ color: cat.color }}
 																					/>
-																					<span className="text-[11px] font-semibold text-gray-900 dark:text-white">
+																					<span
+																						className={`text-[11px] font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
+																					>
 																						{cat.name}
 																					</span>
 																				</button>
 																			))}
 																		</motion.div>
 																	)}
-																</AnimatePresence>
-															</div>
+															</AnimatePresence>
+														</div>
 
-															{/* Tag chip */}
-															{tagInfo && (
-																<span
-																	className="px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider"
+														{/* Tag chip */}
+														{tagInfo && (
+															<div className="relative">
+																<button
+																	onClick={() =>
+																		setExpandedDropdown(
+																			expandedDropdown?.taskId === task.id &&
+																				expandedDropdown?.type === "tag"
+																				? null
+																				: { taskId: task.id, type: "tag" },
+																		)
+																	}
+																	className="px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider text-[8px] shadow-sm backdrop-blur-sm border flex items-center gap-1"
 																	style={{
-																		backgroundColor: `${tagInfo.color}20`,
-																		color: tagInfo.color,
+																		backgroundColor: `${tagInfo.color}90`,
+																		color: "#fff",
+																		borderColor: tagInfo.color,
 																	}}
 																>
 																	{task.tag}
-																</span>
-															)}
+																	<ChevronDown className="w-2.5 h-2.5" />
+																</button>
 
-															{/* Due date chip */}
-															{task.dueDate && (
-																<span className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-full text-[8px] font-bold text-blue-600 dark:text-blue-400">
+																<AnimatePresence>
+																	{expandedDropdown?.taskId === task.id &&
+																		expandedDropdown?.type === "tag" && (
+																			<motion.div
+																				initial={{ opacity: 0, y: -4 }}
+																				animate={{ opacity: 1, y: 0 }}
+																				exit={{ opacity: 0, y: -4 }}
+																				className={`absolute right-0 top-full mt-1 ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"} border rounded-xl shadow-lg z-40 p-2 min-w-[120px]`}
+																			>
+																				{TAGS.map((t) => (
+																					<button
+																						key={t.label}
+																						onClick={() =>
+																							handleTagChange(task.id, t.label as Tag)
+																						}
+																						className={`w-full flex items-center gap-2 px-2 py-1.5 ${darkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"} rounded-lg transition-colors text-left`}
+																					>
+																						<div
+																							className="w-2 h-2 rounded-full"
+																							style={{ backgroundColor: t.color }}
+																						/>
+																						<span
+																							className={`text-[11px] font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
+																						>
+																							{t.label}
+																						</span>
+																					</button>
+																				))}
+																			</motion.div>
+																		)}
+																</AnimatePresence>
+															</div>
+														)}
+
+														{/* Due date chip */}
+														{task.dueDate && (
+															<div className="relative">
+																<button
+																	onClick={() =>
+																		setExpandedDropdown(
+																			expandedDropdown?.taskId === task.id &&
+																				expandedDropdown?.type === "date"
+																				? null
+																				: { taskId: task.id, type: "date" },
+																		)
+																	}
+																	className={`flex items-center gap-1 px-1.5 py-0.5 ${darkMode ? "bg-blue-600/90 border-blue-500" : "bg-blue-600/90 border-blue-500"} backdrop-blur-sm border rounded-md shadow-sm text-[8px] font-bold text-white`}
+																>
 																	<Calendar className="w-2.5 h-2.5" />
 																	{formatDueDate(task.dueDate)}
-																</span>
-															)}
+																	<ChevronDown className="w-2.5 h-2.5" />
+																</button>
 
-															{/* Schedule chip */}
-															{task.startAt && (
-																<span className="flex items-center gap-1 px-1.5 py-0.5 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/30 rounded-full text-[8px] font-bold text-green-600 dark:text-green-400">
-																	<Clock className="w-2.5 h-2.5" />
-																	{formatScheduledTime(
-																		task.startAt,
-																		task.endAt,
-																		task.duration,
-																	)}
-																</span>
-															)}
-														</div>
-													</>
-												)}
-											</motion.div>
-										);
-									})}
-								</div>
+																<AnimatePresence>
+																	{expandedDropdown?.taskId === task.id &&
+																		expandedDropdown?.type === "date" && (
+																			<motion.div
+																				initial={{ opacity: 0, y: -4 }}
+																				animate={{ opacity: 1, y: 0 }}
+																				exit={{ opacity: 0, y: -4 }}
+																				className={`absolute right-0 top-full mt-1 ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"} border rounded-xl shadow-lg z-40 p-3 min-w-[160px]`}
+																			>
+																				<input
+																					type="date"
+																					value={task.dueDate}
+																					onChange={(e) =>
+																						handleDateChange(task.id, e.target.value)
+																					}
+																					className={`w-full ${darkMode ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-50 border-gray-200 text-gray-900"} border rounded-lg px-2 py-1.5 text-[11px] focus:outline-none focus:ring-2 focus:ring-blue-500`}
+																				/>
+																			</motion.div>
+																		)}
+																</AnimatePresence>
+															</div>
+														)}
+
+														{/* Schedule chip */}
+														{task.startAt && (
+															<span className="flex items-center gap-1 bg-green-600/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-md border border-green-500 shadow-sm text-[8px] font-mono">
+																<Clock className="w-2.5 h-2.5" />
+																{formatScheduledTime(
+																	task.startAt,
+																	task.endAt,
+																	task.duration,
+																)}
+															</span>
+														)}
+													</div>
+
+													{/* Task content */}
+													<div className="flex items-center justify-between gap-2">
+														<p
+															className={`flex-1 text-[13px] font-semibold ${darkMode ? "text-white" : "text-gray-900"} leading-snug truncate`}
+														>
+															{task.name}
+														</p>
+														<button
+															onClick={() => handleStartEdit(task)}
+															className={`w-6 h-6 flex items-center justify-center ${darkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"} rounded-lg transition-colors shrink-0`}
+														>
+															<Edit3 className="w-3 h-3 text-gray-400" />
+														</button>
+													</div>
+												</>
+											)}
+										</motion.div>
+									);
+								})
 							)}
 						</div>
-					</motion.div>
-				</>
+					</div>
+
+					{/* Mobile Back Button */}
+					<div
+						className={`md:hidden fixed bottom-6 right-6 z-50`}
+					>
+						<button
+							onClick={onClose}
+							className="p-4 rounded-full bg-purple-600 text-white shadow-2xl hover:bg-purple-700 transition-all active:scale-95"
+						>
+							<ArrowLeft className="w-6 h-6" />
+						</button>
+					</div>
+				</motion.div>
 			)}
 		</AnimatePresence>
 	);
