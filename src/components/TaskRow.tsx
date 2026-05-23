@@ -304,7 +304,9 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 												}
 											/>
 										) : (
-											<Circle className={isCompact ? "w-5.5 h-5.5" : "w-6 h-6"} />
+											<Circle
+												className={isCompact ? "w-5.5 h-5.5" : "w-6 h-6"}
+											/>
 										)}
 									</button>
 
@@ -324,144 +326,143 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 							</div>
 
 							{!isCompact && (
-						<div className="flex flex-col gap-2">
-							<div
-								className="flex flex-wrap items-center gap-2 text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-								onClick={handleCardClick}
-							>
-								{/* PRIORITY CHIP */}
-								{priorityInfo && (
-									<span
-										className={`text-[8px] px-1 py-0.5 rounded-full font-black uppercase tracking-wider shrink-0 ${
-											task.completed
-												? "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
-												: ""
-										}`}
-										style={
-											task.completed
-												? {}
-												: {
-														backgroundColor: `${priorityInfo.color}20`,
-														color: priorityInfo.color,
-													}
-										}
-									>
-										{task.priority}
-									</span>
-								)}
-
-								{/* CATEGORY CHIP */}
-								{category && (
-									<div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800 px-1 py-0.25 rounded-lg border border-gray-100 dark:border-gray-700">
-										<CategoryIcon
-											name={category.iconName}
-											className="w-2.5 h-2.5"
-											style={{
-												color: task.completed ? "#9ca3af" : category.color,
-											}}
-										/>
-										{category.name}
-									</div>
-								)}
-
-								{/* SCHEDULED / DUE DATE CHIP */}
-								{task.startAt ? (
-									<div className="flex items-center gap-1 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-lg border border-blue-100 dark:border-blue-900/40 shadow-sm">
-										<Calendar className="w-2.5 h-2.5" />
-										<span>
-											{task.dueDate
-												? formatScheduledDate(task.dueDate)
-												: "Scheduled"}
-											:{" "}
-											{formatScheduledTime(
-												task.startAt,
-												task.endAt,
-												task.duration,
-											)}
-										</span>
-									</div>
-								) : task.dueDate ? (
+								<div className="flex flex-col gap-2">
 									<div
-										className={`flex items-center gap-1 ${new Date(task.dueDate) < new Date() && !task.completed ? "text-red-500 font-bold" : ""}`}
+										className="flex flex-wrap items-center gap-2 text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+										onClick={handleCardClick}
 									>
-										<Calendar className="w-2.5 h-2.5" />
-										{formatDueDate(task.dueDate)}
+										{/* PRIORITY CHIP */}
+										{priorityInfo && (
+											<span
+												className={`text-[8px] px-1 py-0.5 rounded-full font-black uppercase tracking-wider shrink-0 ${
+													task.completed
+														? "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
+														: ""
+												}`}
+												style={
+													task.completed
+														? {}
+														: {
+																backgroundColor: `${priorityInfo.color}20`,
+																color: priorityInfo.color,
+															}
+												}
+											>
+												{task.priority}
+											</span>
+										)}
+
+										{/* CATEGORY CHIP */}
+										{category && (
+											<div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800 px-1 py-0.25 rounded-lg border border-gray-100 dark:border-gray-700">
+												<CategoryIcon
+													name={category.iconName}
+													className="w-2.5 h-2.5"
+													style={{
+														color: task.completed ? "#9ca3af" : category.color,
+													}}
+												/>
+												{category.name}
+											</div>
+										)}
+
+										{/* SCHEDULED / DUE DATE CHIP */}
+										{task.startAt ? (
+											<div className="flex items-center gap-1 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-lg border border-blue-100 dark:border-blue-900/40 shadow-sm">
+												<Calendar className="w-2.5 h-2.5" />
+												<span>
+													{task.dueDate
+														? formatScheduledDate(task.dueDate)
+														: "Scheduled"}
+													:{" "}
+													{formatScheduledTime(
+														task.startAt,
+														task.endAt,
+														task.duration,
+													)}
+												</span>
+											</div>
+										) : task.dueDate ? (
+											<div
+												className={`flex items-center gap-1 ${new Date(task.dueDate) < new Date() && !task.completed ? "text-red-500 font-bold" : ""}`}
+											>
+												<Calendar className="w-2.5 h-2.5" />
+												{formatDueDate(task.dueDate)}
+											</div>
+										) : null}
+
+										{/* SPENT TIME CHIP */}
+										<div
+											className={`flex items-center gap-1.5 font-mono px-1 py-0.25 rounded-lg border transition-all ${
+												isActive
+													? "bg-orange-500/10 border-orange-500/30 text-orange-600 dark:text-orange-400 font-bold"
+													: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-900/50"
+											}`}
+										>
+											<motion.div
+												animate={isActive ? { rotate: 360 } : { rotate: 0 }}
+												transition={
+													isActive
+														? { repeat: Infinity, duration: 8, ease: "linear" }
+														: {}
+												}
+												className="flex items-center justify-center shrink-0"
+											>
+												<Clock className="w-2.5 h-2.5" />
+											</motion.div>
+											{formatDuration(task.spentTime)}
+										</div>
 									</div>
-								) : null}
 
-								{/* SPENT TIME CHIP */}
-								<div
-									className={`flex items-center gap-1.5 font-mono px-1 py-0.25 rounded-lg border transition-all ${
-										isActive
-											? "bg-orange-500/10 border-orange-500/30 text-orange-600 dark:text-orange-400 font-bold"
-											: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-900/50"
-									}`}
-								>
-									<motion.div
-										animate={isActive ? { rotate: 360 } : { rotate: 0 }}
-										transition={
-											isActive
-												? { repeat: Infinity, duration: 8, ease: "linear" }
-												: {}
-										}
-										className="flex items-center justify-center shrink-0"
-									>
-										<Clock className="w-2.5 h-2.5" />
-									</motion.div>
-									{formatDuration(task.spentTime)}
+									{/* TASK DESCRIPTION */}
+									{task.description && viewMode === "detailed" && (
+										<p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 w-full mt-1">
+											{task.description}
+										</p>
+									)}
 								</div>
-							</div>
-
-							{/* TASK DESCRIPTION */}
-							{task.description && viewMode === "detailed" && (
-								<p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 w-full mt-1">
-									{task.description}
-								</p>
 							)}
-						</div>
+						</>
 					)}
-				</>
-			)}
-		</div>
+				</div>
 
 				{/* MINI MODE: Floating chips on top-right border */}
 				{isMini && (
-					<>
-						<div className="absolute -top-2 right-0 z-30 flex flex-row-reverse flex-wrap items-start gap-1 justify-end max-w-full pl-8">
-							{/* SPENT TIME CHIP */}
+					<div className="absolute -top-2 right-0 z-30 flex flex-row-reverse flex-wrap items-start gap-1 justify-end max-w-full pl-8">
+						{/* SPENT TIME CHIP */}
+						<div
+							className={`flex items-center gap-1 font-mono px-1.5 py-0.5 rounded-md border text-[8px] shadow-sm backdrop-blur-sm ${
+								isActive
+									? "bg-orange-500/90 border-orange-400 text-white font-bold"
+									: "bg-blue-600/90 border-blue-500 text-white"
+							}`}
+						>
+							<Clock className="w-2 h-2" />
+							{formatDuration(task.spentTime)}
+						</div>
+
+						{/* SCHEDULED / DUE DATE CHIP */}
+						{task.startAt && (
+							<div className="flex items-center gap-1 bg-blue-50/90 dark:bg-blue-950/90 backdrop-blur-sm text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/40 shadow-sm text-[8px]">
+								<Calendar className="w-2 h-2" />
+								<span>
+									{task.dueDate ? formatScheduledDate(task.dueDate) : "S"}:{" "}
+									{formatScheduledTime(task.startAt, task.endAt, task.duration)}
+								</span>
+							</div>
+						)}
+						{!task.startAt && task.dueDate && (
 							<div
-								className={`flex items-center gap-1 font-mono px-1.5 py-0.5 rounded-md border text-[8px] shadow-sm backdrop-blur-sm ${
-									isActive
-										? "bg-orange-500/90 border-orange-400 text-white font-bold"
-										: "bg-blue-600/90 border-blue-500 text-white"
+								className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border shadow-sm text-[8px] backdrop-blur-sm ${
+									new Date(task.dueDate) < new Date() && !task.completed
+										? "bg-red-500/90 border-red-400 text-white font-bold"
+										: "bg-gray-100/90 dark:bg-gray-800/90 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400"
 								}`}
 							>
-								<Clock className="w-2 h-2" />
-								{formatDuration(task.spentTime)}
+								<Calendar className="w-2 h-2" />
+								{formatDueDate(task.dueDate)}
 							</div>
-
-							{/* SCHEDULED / DUE DATE CHIP */}
-							{task.startAt && (
-								<div className="flex items-center gap-1 bg-blue-50/90 dark:bg-blue-950/90 backdrop-blur-sm text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/40 shadow-sm text-[8px]">
-									<Calendar className="w-2 h-2" />
-									<span>
-										{task.dueDate ? formatScheduledDate(task.dueDate) : "S"}:{" "}
-										{formatScheduledTime(task.startAt, task.endAt, task.duration)}
-									</span>
-								</div>
-							)}
-							{!task.startAt && task.dueDate && (
-								<div
-									className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border shadow-sm text-[8px] backdrop-blur-sm ${
-										new Date(task.dueDate) < new Date() && !task.completed
-											? "bg-red-500/90 border-red-400 text-white font-bold"
-											: "bg-gray-100/90 dark:bg-gray-800/90 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400"
-									}`}
-								>
-									<Calendar className="w-2 h-2" />
-									{formatDueDate(task.dueDate)}
-								</div>
-							)}
+						)}
 
 						{/* CATEGORY CHIP */}
 						{category && (
