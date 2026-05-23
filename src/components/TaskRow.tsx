@@ -134,7 +134,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 
 	return (
 		<div
-			className={`relative rounded-xl w-full select-none bg-gray-50 dark:bg-gray-900/30 ${isMini ? "overflow-visible" : "overflow-hidden"}`}
+			className={`relative rounded-xl w-full select-none ${isMini ? "overflow-visible" : "overflow-hidden"} ${task.completed ? "bg-gray-50 dark:bg-gray-900/30" : "bg-gray-50 dark:bg-gray-900/30"}`}
 		>
 			{/* Background Actions (Swipe to Reveal) - Hidden when active */}
 			{!isActive && (
@@ -218,7 +218,9 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 				} ${
 					isActive
 						? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-500/30"
-						: "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-blue-100 dark:hover:border-blue-900"
+						: task.completed
+							? "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-blue-100 dark:hover:border-blue-900"
+							: "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-blue-100 dark:hover:border-blue-900"
 				} ${task.completed ? "opacity-50 grayscale-[0.5]" : ""}`}
 			>
 				{onDragStart && (

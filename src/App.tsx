@@ -573,8 +573,11 @@ export default function App() {
 			});
 		}
 
-		// 2. Create duplicate
+		// 2. Create duplicate - reset date to today
 		const newId = generateId();
+		const today = new Date();
+		const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
 		const newTask: Task = {
 			...taskToReenter,
 			id: newId,
@@ -582,6 +585,11 @@ export default function App() {
 			completed: false,
 			completedAt: undefined,
 			createdAt: Date.now(),
+			// Reset scheduling to today's date
+			dueDate: taskToReenter.dueDate ? todayStr : undefined,
+			startAt: undefined,
+			endAt: undefined,
+			duration: taskToReenter.duration,
 		};
 
 		// 3. Update state (new task at the top)
