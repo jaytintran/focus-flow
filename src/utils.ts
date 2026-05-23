@@ -149,22 +149,6 @@ export function parseSmartInput(input: string): {
 		cleanName = cleanName.replace(/~(\d+(?:\.\d+)?)\s*(h|m|hr|min|hour|minute)?s?/gi, "").trim();
 	}
 
-	// Extract tag (#quick, #explore, #finish, #handle)
-	const tagMatch = input.match(/#(quick|explore|finish|handle)/i);
-	if (tagMatch) {
-		const tagText = tagMatch[1].toLowerCase();
-		if (tagText === "quick") {
-			tag = "quick";
-		} else if (tagText === "explore") {
-			tag = "explore";
-		} else if (tagText === "finish") {
-			tag = "finish";
-		} else if (tagText === "handle") {
-			tag = "handle";
-		}
-		cleanName = cleanName.replace(/#(quick|explore|finish|handle)/gi, "").trim();
-	}
-
 	// Extract time patterns (due dates)
 	const timeMatch = input.match(
 		/!(today|tomorrow|tmr|mon|tue|wed|thu|fri|sat|sun|(\d{4}-\d{2}-\d{2})|(\d{1,2})[/-](\d{1,2})|(\d+)([hdw]))/i,
