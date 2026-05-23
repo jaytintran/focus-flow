@@ -370,12 +370,12 @@ export default function JournalView({
 				className={`journal-header px-6 py-6 border-b flex items-center justify-between ${darkMode ? "border-gray-800 bg-gray-950/80" : "border-gray-100 bg-white/80"} backdrop-blur-md sticky top-0 z-10`}
 			>
 				<div className="flex items-center gap-4">
-					<button
+					{/* <button
 						onClick={onClose}
 						className={`p-2 rounded-2xl transition-all ${darkMode ? "bg-gray-900 hover:bg-gray-800 text-gray-400" : "bg-gray-50 hover:bg-gray-100 text-gray-500"}`}
 					>
 						<ArrowLeft className="w-6 h-6" />
-					</button>
+					</button> */}
 					<div>
 						<h2 className="text-xl font-black">Daily Journal</h2>
 						<p className="text-[10px] uppercase font-bold tracking-widest text-blue-500">
@@ -630,7 +630,10 @@ export default function JournalView({
 												: "#F97316";
 
 										return (
-											<div key={item.id} className={`relative group ${viewMode === "mini" ? "overflow-visible" : ""}`}>
+											<div
+												key={item.id}
+												className={`relative group ${viewMode === "mini" ? "overflow-visible" : ""}`}
+											>
 												<div
 													className="absolute -left-[2.35rem] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-4 border-white dark:border-gray-950 z-10 transition-all duration-300 group-hover:scale-125"
 													style={{
@@ -705,10 +708,14 @@ export default function JournalView({
 																	<div className="flex items-center gap-1 bg-blue-600/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-md border border-blue-500 shadow-sm text-[8px] font-mono">
 																		<Clock className="w-2 h-2" />
 																		{item.task?.startAt && item.task?.endAt
-																			? `${new Date(item.task.startAt).toLocaleTimeString([], {
+																			? `${new Date(
+																					item.task.startAt,
+																				).toLocaleTimeString([], {
 																					hour: "numeric",
 																					minute: "2-digit",
-																				})} → ${new Date(item.task.endAt).toLocaleTimeString([], {
+																				})} → ${new Date(
+																					item.task.endAt,
+																				).toLocaleTimeString([], {
 																					hour: "numeric",
 																					minute: "2-digit",
 																				})}`
@@ -755,10 +762,14 @@ export default function JournalView({
 																			: "Scheduled"}
 																		:{" "}
 																		{item.task?.startAt && item.task?.endAt
-																			? `${new Date(item.task.startAt).toLocaleTimeString([], {
+																			? `${new Date(
+																					item.task.startAt,
+																				).toLocaleTimeString([], {
 																					hour: "numeric",
 																					minute: "2-digit",
-																				})} → ${new Date(item.task.endAt).toLocaleTimeString([], {
+																				})} → ${new Date(
+																					item.task.endAt,
+																				).toLocaleTimeString([], {
 																					hour: "numeric",
 																					minute: "2-digit",
 																				})}`
@@ -823,14 +834,20 @@ export default function JournalView({
 																		<div className="flex items-center gap-1 bg-gray-600/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-md border border-gray-500 shadow-sm text-[8px] font-mono">
 																			<Clock className="w-2 h-2" />
 																			{item.task?.startAt && item.task?.endAt
-																				? `${new Date(item.task.startAt).toLocaleTimeString([], {
+																				? `${new Date(
+																						item.task.startAt,
+																					).toLocaleTimeString([], {
 																						hour: "numeric",
 																						minute: "2-digit",
-																					})} → ${new Date(item.task.endAt).toLocaleTimeString([], {
+																					})} → ${new Date(
+																						item.task.endAt,
+																					).toLocaleTimeString([], {
 																						hour: "numeric",
 																						minute: "2-digit",
 																					})}`
-																				: new Date(item.timestamp).toLocaleTimeString([], {
+																				: new Date(
+																						item.timestamp,
+																					).toLocaleTimeString([], {
 																						hour: "2-digit",
 																						minute: "2-digit",
 																					})}
@@ -943,14 +960,20 @@ export default function JournalView({
 																			</span>
 																			<span className="text-[10px] font-mono text-gray-400">
 																				{item.task?.startAt && item.task?.endAt
-																					? `${new Date(item.task.startAt).toLocaleTimeString([], {
+																					? `${new Date(
+																							item.task.startAt,
+																						).toLocaleTimeString([], {
 																							hour: "numeric",
 																							minute: "2-digit",
-																						})} → ${new Date(item.task.endAt).toLocaleTimeString([], {
+																						})} → ${new Date(
+																							item.task.endAt,
+																						).toLocaleTimeString([], {
 																							hour: "numeric",
 																							minute: "2-digit",
 																						})}`
-																					: new Date(item.timestamp).toLocaleTimeString([], {
+																					: new Date(
+																							item.timestamp,
+																						).toLocaleTimeString([], {
 																							hour: "2-digit",
 																							minute: "2-digit",
 																						})}
