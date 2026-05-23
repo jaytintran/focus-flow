@@ -242,45 +242,88 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 					</div>
 				)}
 				<div className="flex-1 min-w-0">
-					<div className="flex items-center justify-between gap-3 mb-1">
-						<div className="flex items-center gap-2.5 flex-1 min-w-0">
+					{isMini ? (
+						// MINI MODE: Compact single-line layout
+						<div className="flex items-center gap-2 min-w-0 flex-1">
 							<button
 								onClick={(e) => {
 									e.stopPropagation();
 									triggerHaptic();
 									onToggleComplete(task.id);
 								}}
-								className="shrink-0 text-gray-400 hover:text-blue-500 transition-colors cursor-pointer p-1"
+								className="shrink-0 text-gray-400 hover:text-blue-500 transition-colors cursor-pointer"
 							>
 								{task.completed ? (
-									<CheckCircle2
-										className={
-											isCompact
-												? "w-5.5 h-5.5 text-green-500"
-												: "w-6 h-6 text-green-500"
-										}
-									/>
+									<CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
 								) : (
-									<Circle className={isCompact ? "w-5.5 h-5.5" : "w-6 h-6"} />
+									<Circle className="w-3.5 h-3.5" />
 								)}
 							</button>
 
-							<div className="flex-1 min-w-0" onClick={handleCardClick}>
-								<div className="flex items-center gap-1.5">
-									<h3
-										className={`${isCompact ? "text-xs" : "text-sm"} font-bold truncate ${task.completed ? "line-through text-gray-400" : "text-gray-900 dark:text-white"}`}
-									>
-										{task.name}
-									</h3>
-									{task.description && !isCompact && (
-										<AlignLeft className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-									)}
+							{category && (
+								<div
+									className="flex items-center justify-center p-0.5 rounded shrink-0"
+									style={{
+										color: task.completed ? "#9ca3af" : category.color,
+										backgroundColor: task.completed
+											? "rgba(156, 163, 175, 0.15)"
+											: `${category.color}15`,
+									}}
+								>
+									<CategoryIcon name={category.iconName} className="w-3 h-3" />
 								</div>
+							)}
+
+							<div className="flex-1 min-w-0" onClick={handleCardClick}>
+								<h3
+									className={`text-xs font-bold truncate ${task.completed ? "line-through text-gray-400" : "text-gray-900 dark:text-white"}`}
+								>
+									{task.name}
+								</h3>
 							</div>
 						</div>
-					</div>
+					) : (
+						// NORMAL/COMPACT MODE: Original layout
+						<>
+							<div className="flex items-center justify-between gap-3 mb-1">
+								<div className="flex items-center gap-2.5 flex-1 min-w-0">
+									<button
+										onClick={(e) => {
+											e.stopPropagation();
+											triggerHaptic();
+											onToggleComplete(task.id);
+										}}
+										className="shrink-0 text-gray-400 hover:text-blue-500 transition-colors cursor-pointer p-1"
+									>
+										{task.completed ? (
+											<CheckCircle2
+												className={
+													isCompact
+														? "w-5.5 h-5.5 text-green-500"
+														: "w-6 h-6 text-green-500"
+												}
+											/>
+										) : (
+											<Circle className={isCompact ? "w-5.5 h-5.5" : "w-6 h-6"} />
+										)}
+									</button>
 
-					{!isCompact && !isMini && (
+									<div className="flex-1 min-w-0" onClick={handleCardClick}>
+										<div className="flex items-center gap-1.5">
+											<h3
+												className={`${isCompact ? "text-xs" : "text-sm"} font-bold truncate ${task.completed ? "line-through text-gray-400" : "text-gray-900 dark:text-white"}`}
+											>
+												{task.name}
+											</h3>
+											{task.description && !isCompact && (
+												<AlignLeft className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+											)}
+										</div>
+									</div>
+								</div>
+							</div>
+
+							{!isCompact && (
 						<div className="flex flex-col gap-2">
 							<div
 								className="flex flex-wrap items-center gap-2 text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
@@ -377,7 +420,9 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 							)}
 						</div>
 					)}
-				</div>
+				</>
+			)}
+		</div>
 
 				{/* MINI MODE: Floating chips on top-right border */}
 				{isMini && (
@@ -424,11 +469,11 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 								style={{
 									backgroundColor: task.completed
 										? "rgba(156, 163, 175, 0.9)"
-										: `${category.color}20`,
+										: `${category.color}90`,
 									borderColor: task.completed
 										? "rgba(156, 163, 175, 0.5)"
-										: `${category.color}40`,
-									color: task.completed ? "#fff" : category.color,
+										: `${category.color}`,
+									color: "#fff",
 								}}
 							>
 								<CategoryIcon name={category.iconName} className="w-2 h-2" />
@@ -443,9 +488,9 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 								style={{
 									backgroundColor: task.completed
 										? "rgba(156, 163, 175, 0.9)"
-										: `${priorityInfo.color}30`,
-									color: task.completed ? "#fff" : priorityInfo.color,
-									border: `1px solid ${task.completed ? "rgba(156, 163, 175, 0.5)" : `${priorityInfo.color}50`}`,
+										: `${priorityInfo.color}90`,
+									color: "#fff",
+									border: `1px solid ${task.completed ? "rgba(156, 163, 175, 0.5)" : `${priorityInfo.color}`}`,
 								}}
 							>
 								{task.priority}
