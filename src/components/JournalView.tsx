@@ -66,6 +66,7 @@ export default function JournalView({
 	const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
 	const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 	const [showTooltip, setShowTooltip] = useState(false);
+	const [viewMode, setViewMode] = useState<"normal" | "mini">("normal");
 
 	const getLocalDateStr = (dateOrTime: Date | number) => {
 		const d =
@@ -374,6 +375,38 @@ export default function JournalView({
 				</div>
 
 				<div className="flex items-center gap-2">
+					{/* View Mode Selector */}
+					<div
+						className={`p-0.5 rounded-xl flex gap-1 ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}
+					>
+						<button
+							type="button"
+							onClick={() => setViewMode("normal")}
+							className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+								viewMode === "normal"
+									? darkMode
+										? "bg-gray-850 text-white shadow-lg"
+										: "bg-white text-gray-900 shadow-sm"
+									: "text-gray-400 hover:text-gray-350 dark:hover:text-gray-300"
+							}`}
+						>
+							Normal
+						</button>
+						<button
+							type="button"
+							onClick={() => setViewMode("mini")}
+							className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+								viewMode === "mini"
+									? darkMode
+										? "bg-gray-850 text-white shadow-lg"
+										: "bg-white text-gray-900 shadow-sm"
+									: "text-gray-400 hover:text-gray-350 dark:hover:text-gray-300"
+							}`}
+						>
+							Mini
+						</button>
+					</div>
+
 					<div
 						className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase text-blue-500 ${darkMode ? "bg-blue-500/10" : "bg-blue-50"}`}
 					>
@@ -587,7 +620,7 @@ export default function JournalView({
 												: "#F97316";
 
 										return (
-											<div key={item.id} className="relative group">
+											<div key={item.id} className={`relative group ${viewMode === "mini" ? "overflow-visible" : ""}`}>
 												<div
 													className="absolute -left-[2.35rem] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-4 border-white dark:border-gray-950 z-10 transition-all duration-300 group-hover:scale-125"
 													style={{
@@ -597,7 +630,7 @@ export default function JournalView({
 												/>
 
 												<div
-													className={`p-4 rounded-2xl border transition-all duration-300 hover:translate-x-1 ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-50 shadow-sm"}`}
+													className={`${viewMode === "mini" ? "p-2 rounded-xl" : "p-4 rounded-2xl"} border transition-all duration-300 hover:translate-x-1 ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-50 shadow-sm"}`}
 												>
 													{item.isScheduledActiveTask ? (
 														<div className="flex flex-col gap-3">
@@ -713,86 +746,182 @@ export default function JournalView({
 													) : (
 														// VIEW MODE (existing content)
 														<>
-															<div className="flex items-center justify-between mb-2">
-																<div className="flex items-center gap-2">
-																	{category ? (
-																		<div
-																			className="flex items-center justify-center p-1 rounded-lg"
-																			style={{
-																				color: category.color,
-																				backgroundColor: `${category.color}15`,
-																			}}
-																		>
-																			<CategoryIcon
-																				name={category.iconName}
-																				className="w-3.5 h-3.5"
-																			/>
+															{viewMode === "mini" ? (
+																// MINI MODE
+																<>
+																	{/* Floating chips on top-right border */}
+																	<div className="absolute -top-2 right-0 z-30 flex flex-row-reverse flex-wrap items-start gap-1 justify-end max-w-full pl-8">
+																		{/* TIME CHIP */}
+																		<div className="flex items-center gap-1 bg-gray-600/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-md border border-gray-500 shadow-sm text-[8px] font-mono">
+																			<Clock className="w-2 h-2" />
+																			{new Date(item.timestamp).toLocaleTimeString([], {
+																				hour: "2-digit",
+																				minute: "2-digit",
+																			})}
 																		</div>
-																	) : item.type === "Task" ? (
-																		<CheckCircle2 className="w-4 h-4 text-green-500" />
-																	) : (
-																		<Package className="w-4 h-4 text-orange-500" />
-																	)}
-																	<span
-																		className={`text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded ${item.type === "Task" ? "bg-green-500/10 text-green-500" : "bg-orange-500/10 text-orange-500"}`}
-																	>
-																		{item.type}
-																	</span>
-																	<span className="text-[10px] font-mono text-gray-400">
-																		{new Date(
-																			item.timestamp,
-																		).toLocaleTimeString([], {
-																			hour: "2-digit",
-																			minute: "2-digit",
-																		})}
-																	</span>
-																</div>
-																{!item.isCompletedTask && (
-																	<div className="flex items-center gap-1">
-																		<button
-																			onClick={() => handleStartEdit(item)}
-																			className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors"
-																			title="Edit entry"
+
+																		{/* TYPE CHIP */}
+																		<span
+																			className={`px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider shrink-0 text-[8px] shadow-sm backdrop-blur-sm ${
+																				item.type === "Task"
+																					? "bg-green-500/90 text-white border border-green-400"
+																					: "bg-orange-500/90 text-white border border-orange-400"
+																			}`}
 																		>
-																			<Pencil className="w-3.5 h-3.5" />
-																		</button>
-																		<button
-																			onClick={() => onDeleteEntry(item.id)}
-																			className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-																			title="Delete entry"
-																		>
-																			<Trash2 className="w-3.5 h-3.5" />
-																		</button>
-																	</div>
-																)}
-															</div>
-															<p
-																className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}
-															>
-																{item.content}
-															</p>
-															{item.categoryId &&
-																categories.find(
-																	(c) => c.id === item.categoryId,
-																) && (
-																	<div className="mt-3 flex items-center gap-1.5 opacity-60">
-																		<div
-																			className="w-1.5 h-1.5 rounded-full"
-																			style={{
-																				backgroundColor: categories.find(
-																					(c) => c.id === item.categoryId,
-																				)?.color,
-																			}}
-																		/>
-																		<span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
-																			{
-																				categories.find(
-																					(c) => c.id === item.categoryId,
-																				)?.name
-																			}
+																			{item.type}
 																		</span>
+
+																		{/* CATEGORY CHIP */}
+																		{category && (
+																			<div
+																				className="flex items-center gap-1 px-1.5 py-0.5 rounded-md border shadow-sm text-[8px] backdrop-blur-sm uppercase"
+																				style={{
+																					backgroundColor: `${category.color}90`,
+																					borderColor: `${category.color}`,
+																					color: "#fff",
+																				}}
+																			>
+																				<CategoryIcon
+																					name={category.iconName}
+																					className="w-2 h-2"
+																				/>
+																				{category.name}
+																			</div>
+																		)}
 																	</div>
-																)}
+
+																	{/* Compact content */}
+																	<div className="flex items-center justify-between gap-2">
+																		<div className="flex items-center gap-2 min-w-0 flex-1">
+																			{category ? (
+																				<div
+																					className="flex items-center justify-center p-0.5 rounded shrink-0"
+																					style={{
+																						color: category.color,
+																						backgroundColor: `${category.color}15`,
+																					}}
+																				>
+																					<CategoryIcon
+																						name={category.iconName}
+																						className="w-3 h-3"
+																					/>
+																				</div>
+																			) : item.type === "Task" ? (
+																				<CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
+																			) : (
+																				<Package className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+																			)}
+																			<p
+																				className={`text-xs font-bold truncate ${darkMode ? "text-gray-300" : "text-gray-700"}`}
+																			>
+																				{item.content}
+																			</p>
+																		</div>
+																		{!item.isCompletedTask && (
+																			<div className="flex items-center gap-0.5 shrink-0">
+																				<button
+																					onClick={() => handleStartEdit(item)}
+																					className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+																					title="Edit entry"
+																				>
+																					<Pencil className="w-3 h-3" />
+																				</button>
+																				<button
+																					onClick={() => onDeleteEntry(item.id)}
+																					className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+																					title="Delete entry"
+																				>
+																					<Trash2 className="w-3 h-3" />
+																				</button>
+																			</div>
+																		)}
+																	</div>
+																</>
+															) : (
+																// NORMAL MODE
+																<>
+																	<div className="flex items-center justify-between mb-2">
+																		<div className="flex items-center gap-2">
+																			{category ? (
+																				<div
+																					className="flex items-center justify-center p-1 rounded-lg"
+																					style={{
+																						color: category.color,
+																						backgroundColor: `${category.color}15`,
+																					}}
+																				>
+																					<CategoryIcon
+																						name={category.iconName}
+																						className="w-3.5 h-3.5"
+																					/>
+																				</div>
+																			) : item.type === "Task" ? (
+																				<CheckCircle2 className="w-4 h-4 text-green-500" />
+																			) : (
+																				<Package className="w-4 h-4 text-orange-500" />
+																			)}
+																			<span
+																				className={`text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded ${item.type === "Task" ? "bg-green-500/10 text-green-500" : "bg-orange-500/10 text-orange-500"}`}
+																			>
+																				{item.type}
+																			</span>
+																			<span className="text-[10px] font-mono text-gray-400">
+																				{new Date(
+																					item.timestamp,
+																				).toLocaleTimeString([], {
+																					hour: "2-digit",
+																					minute: "2-digit",
+																				})}
+																			</span>
+																		</div>
+																		{!item.isCompletedTask && (
+																			<div className="flex items-center gap-1">
+																				<button
+																					onClick={() => handleStartEdit(item)}
+																					className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors"
+																					title="Edit entry"
+																				>
+																					<Pencil className="w-3.5 h-3.5" />
+																				</button>
+																				<button
+																					onClick={() => onDeleteEntry(item.id)}
+																					className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+																					title="Delete entry"
+																				>
+																					<Trash2 className="w-3.5 h-3.5" />
+																				</button>
+																			</div>
+																		)}
+																	</div>
+																	<p
+																		className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}
+																	>
+																		{item.content}
+																	</p>
+																	{item.categoryId &&
+																		categories.find(
+																			(c) => c.id === item.categoryId,
+																		) && (
+																			<div className="mt-3 flex items-center gap-1.5 opacity-60">
+																				<div
+																					className="w-1.5 h-1.5 rounded-full"
+																					style={{
+																						backgroundColor: categories.find(
+																							(c) => c.id === item.categoryId,
+																						)?.color,
+																					}}
+																				/>
+																				<span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+																					{
+																						categories.find(
+																							(c) => c.id === item.categoryId,
+																						)?.name
+																					}
+																				</span>
+																			</div>
+																		)}
+																</>
+															)}
 														</>
 													)}
 												</div>
