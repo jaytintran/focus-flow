@@ -97,6 +97,7 @@ export default function JournalView({
 				originalId: t.id,
 				isCompletedTask: true,
 				isScheduledActiveTask: false,
+				task: t,
 			}));
 
 		const activeScheduledTasks = tasks
@@ -820,10 +821,18 @@ export default function JournalView({
 																		{/* TIME CHIP */}
 																		<div className="flex items-center gap-1 bg-gray-600/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-md border border-gray-500 shadow-sm text-[8px] font-mono">
 																			<Clock className="w-2 h-2" />
-																			{new Date(item.timestamp).toLocaleTimeString([], {
-																				hour: "2-digit",
-																				minute: "2-digit",
-																			})}
+																			{item.task?.startAt && item.task?.endAt
+																				? `${new Date(item.task.startAt).toLocaleTimeString([], {
+																						hour: "numeric",
+																						minute: "2-digit",
+																					})} → ${new Date(item.task.endAt).toLocaleTimeString([], {
+																						hour: "numeric",
+																						minute: "2-digit",
+																					})}`
+																				: new Date(item.timestamp).toLocaleTimeString([], {
+																						hour: "2-digit",
+																						minute: "2-digit",
+																					})}
 																		</div>
 
 																		{/* TYPE CHIP */}
@@ -932,12 +941,18 @@ export default function JournalView({
 																				{item.type}
 																			</span>
 																			<span className="text-[10px] font-mono text-gray-400">
-																				{new Date(
-																					item.timestamp,
-																				).toLocaleTimeString([], {
-																					hour: "2-digit",
-																					minute: "2-digit",
-																				})}
+																				{item.task?.startAt && item.task?.endAt
+																					? `${new Date(item.task.startAt).toLocaleTimeString([], {
+																							hour: "numeric",
+																							minute: "2-digit",
+																						})} → ${new Date(item.task.endAt).toLocaleTimeString([], {
+																							hour: "numeric",
+																							minute: "2-digit",
+																						})}`
+																					: new Date(item.timestamp).toLocaleTimeString([], {
+																							hour: "2-digit",
+																							minute: "2-digit",
+																						})}
 																			</span>
 																		</div>
 																		{!item.isCompletedTask && (
