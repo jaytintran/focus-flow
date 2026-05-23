@@ -66,7 +66,15 @@ export default function JournalView({
 	const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
 	const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 	const [showTooltip, setShowTooltip] = useState(false);
-	const [viewMode, setViewMode] = useState<"normal" | "mini">("normal");
+	const [viewMode, setViewMode] = useState<"normal" | "mini">(() => {
+		const saved = localStorage.getItem("journalViewMode");
+		return (saved as "normal" | "mini") || "normal";
+	});
+
+	// Persist view mode to localStorage
+	React.useEffect(() => {
+		localStorage.setItem("journalViewMode", viewMode);
+	}, [viewMode]);
 
 	const getLocalDateStr = (dateOrTime: Date | number) => {
 		const d =
@@ -649,7 +657,7 @@ export default function JournalView({
 																		<h4 className="text-sm font-bold text-gray-900 dark:text-white truncate">
 																			{item.content}
 																		</h4>
-																		{category && (
+																		{category && viewMode === "normal" && (
 																			<div className="mt-1 flex items-center gap-1.5 opacity-60">
 																				<div
 																					className="flex items-center justify-center p-0.5 rounded bg-gray-100 dark:bg-gray-800"
@@ -688,20 +696,78 @@ export default function JournalView({
 																</div>
 															</div>
 
-															<div className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 px-2.5 py-1 rounded-xl w-fit border border-blue-100 dark:border-blue-900/35 shadow-sm">
-																<Clock className="w-3.5 h-3.5 animate-pulse" />
-																<span>
-																	{item.task?.dueDate
-																		? formatScheduledDate(item.task.dueDate)
-																		: "Scheduled"}
-																	:{" "}
-																	{formatScheduledTime(
-																		item.task?.startAt || item.timestamp,
-																		item.task?.endAt,
-																		item.task?.duration,
+															{viewMode === "mini" ? (
+																// MINI MODE - Floating chips
+																<div className="absolute -top-2 right-0 z-30 flex flex-row-reverse flex-wrap items-start gap-1 justify-end max-w-full pl-8">
+																	{/* SCHEDULED TIME CHIP */}
+																	<div className="flex items-center gap-1 bg-blue-600/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-md border border-blue-500 shadow-sm text-[8px] font-mono">
+																		<Clock className="w-2 h-2" />
+																		{item.task?.startAt && item.task?.endAt
+																			? `${new Date(item.task.startAt).toLocaleTimeString([], {
+																					hour: "numeric",
+																					minute: "2-digit",
+																				})} → ${new Date(item.task.endAt).toLocaleTimeString([], {
+																					hour: "numeric",
+																					minute: "2-digit",
+																				})}`
+																			: formatScheduledTime(
+																					item.task?.startAt || item.timestamp,
+																					item.task?.endAt,
+																					item.task?.duration,
+																				)}
+																	</div>
+
+																	{/* DATE CHIP */}
+																	{item.task?.dueDate && (
+																		<div className="flex items-center gap-1 bg-gray-600/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-md border border-gray-500 shadow-sm text-[8px]">
+																			<CalendarIcon className="w-2 h-2" />
+																			{formatScheduledDate(item.task.dueDate)}
+																		</div>
 																	)}
-																</span>
-															</div>
+
+																	{/* CATEGORY CHIP */}
+																	{category && (
+																		<div
+																			className="flex items-center gap-1 px-1.5 py-0.5 rounded-md border shadow-sm text-[8px] backdrop-blur-sm uppercase"
+																			style={{
+																				backgroundColor: `${category.color}90`,
+																				borderColor: `${category.color}`,
+																				color: "#fff",
+																			}}
+																		>
+																			<CategoryIcon
+																				name={category.iconName}
+																				className="w-2 h-2"
+																			/>
+																			{category.name}
+																		</div>
+																	)}
+																</div>
+															) : (
+																// NORMAL MODE - Inline chip
+																<div className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 px-2.5 py-1 rounded-xl w-fit border border-blue-100 dark:border-blue-900/35 shadow-sm">
+																	<Clock className="w-3.5 h-3.5 animate-pulse" />
+																	<span>
+																		{item.task?.dueDate
+																			? formatScheduledDate(item.task.dueDate)
+																			: "Scheduled"}
+																		:{" "}
+																		{item.task?.startAt && item.task?.endAt
+																			? `${new Date(item.task.startAt).toLocaleTimeString([], {
+																					hour: "numeric",
+																					minute: "2-digit",
+																				})} → ${new Date(item.task.endAt).toLocaleTimeString([], {
+																					hour: "numeric",
+																					minute: "2-digit",
+																				})}`
+																			: formatScheduledTime(
+																					item.task?.startAt || item.timestamp,
+																					item.task?.endAt,
+																					item.task?.duration,
+																				)}
+																	</span>
+																</div>
+															)}
 														</div>
 													) : editingEntryId === item.id ? (
 														// EDIT MODE
