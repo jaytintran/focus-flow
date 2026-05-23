@@ -98,7 +98,7 @@ export const HabitRow: React.FC<HabitRowProps> = ({
 					onPointerLeave={handlePointerCancel}
 					onPointerCancel={handlePointerCancel}
 					onClick={() => handleHabitTap(habit)}
-					className={`w-full rounded-xl px-2 py-2 flex items-center gap-2 transition-all border relative overflow-hidden ${
+					className={`w-full rounded-xl px-1.75 py-1.5 flex items-center gap-2 transition-all border relative overflow-hidden ${
 						isCompletedToday
 							? "shadow-lg"
 							: darkMode
@@ -123,7 +123,7 @@ export const HabitRow: React.FC<HabitRowProps> = ({
 
 					{/* Icon circle */}
 					<div
-						className={`relative w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white ${
+						className={`relative w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-white ${
 							!isCompletedToday &&
 							(darkMode
 								? "!bg-gray-800 !text-gray-400"
@@ -149,7 +149,7 @@ export const HabitRow: React.FC<HabitRowProps> = ({
 					<div className="flex flex-col flex-1 justify-start items-start">
 						{/* Habit name */}
 						<span
-							className={`text-[11px] text-left font-semibold truncate flex-1 ${
+							className={`text-xs text-left font-semibold truncate flex-1 ${
 								!isCompletedToday &&
 								(darkMode ? "text-gray-200" : "text-gray-600")
 							}`}
