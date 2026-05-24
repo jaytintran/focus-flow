@@ -22,6 +22,7 @@ import { JournalEntry, Task, JournalType, Category } from "../types";
 import { TAGS } from "../constants";
 import { formatScheduledTime, formatScheduledDate } from "../utils";
 import { CategoryIcon } from "./CategoryIcon";
+import * as db from "../db";
 
 interface JournalViewProps {
 	tasks: Task[];
@@ -62,14 +63,18 @@ export default function JournalView({
 	const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
 	const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 	const [showTooltip, setShowTooltip] = useState(false);
-	const [viewMode, setViewMode] = useState<"normal" | "mini">(() => {
-		const saved = localStorage.getItem("journalViewMode");
-		return (saved as "normal" | "mini") || "normal";
-	});
+	const [viewMode, setViewMode] = useState<"normal" | "mini">("normal");
 
-	// Persist view mode to localStorage
 	React.useEffect(() => {
-		localStorage.setItem("journalViewMode", viewMode);
+		db.getSetting("journalViewMode").then((saved) => {
+			if (saved === "normal" || saved === "mini") {
+				setViewMode(saved);
+			}
+		});
+	}, []);
+
+	React.useEffect(() => {
+		db.setSetting("journalViewMode", viewMode);
 	}, [viewMode]);
 
 	const getLocalDateStr = (dateOrTime: Date | number) => {
@@ -358,7 +363,11 @@ export default function JournalView({
 	});
 
 	const weekdays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-	const journalTypeOptions: { label: string; value: JournalType; className: string }[] = [
+	const journalTypeOptions: {
+		label: string;
+		value: JournalType;
+		className: string;
+	}[] = [
 		{
 			label: "Task",
 			value: "Task",
@@ -395,11 +404,11 @@ export default function JournalView({
 			animate={{ opacity: 1, y: 0 }}
 			exit={{ opacity: 0, y: 8 }}
 			transition={{ duration: 0.18, ease: "easeOut" }}
-			className={`flex-1 min-h-0 flex flex-col rounded-3xl overflow-hidden ${darkMode ? "bg-gray-950 text-white" : "bg-white text-gray-900"}`}
+			className={`flex-1 min-h-0 flex flex-col overflow-hidden ${darkMode ? "bg-gray-950 text-white" : "bg-white text-gray-900"}`}
 		>
 			{/* View Controls */}
 			<div
-				className={`px-3 py-2 border-b flex flex-wrap items-center gap-1.5 ${
+				className={`flex flex-wrap items-center gap-1.5 ${
 					darkMode
 						? "border-gray-800/80 bg-gray-950/40"
 						: "border-gray-100 bg-gray-50/50"
@@ -619,7 +628,7 @@ export default function JournalView({
 			</AnimatePresence>
 
 			{/* Content */}
-			<div className="flex-1 overflow-y-auto px-3 py-4 no-scrollbar scroll-smooth">
+			<div className="flex-1 overflow-y-auto py-3 no-scrollbar scroll-smooth">
 				<div className="space-y-8">
 					{Object.entries(groupedItems).map(([date, items]) => {
 						const dateStr =
@@ -672,10 +681,14 @@ export default function JournalView({
 																	<div className="flex items-center gap-1 bg-blue-600/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-md border border-blue-500 shadow-sm text-[8px] font-mono">
 																		<Clock className="w-2 h-2" />
 																		{item.task?.startAt && item.task?.endAt
-																			? `${new Date(item.task.startAt).toLocaleTimeString([], {
+																			? `${new Date(
+																					item.task.startAt,
+																				).toLocaleTimeString([], {
 																					hour: "numeric",
 																					minute: "2-digit",
-																				})} → ${new Date(item.task.endAt).toLocaleTimeString([], {
+																				})} → ${new Date(
+																					item.task.endAt,
+																				).toLocaleTimeString([], {
 																					hour: "numeric",
 																					minute: "2-digit",
 																				})}`
@@ -713,21 +726,24 @@ export default function JournalView({
 																	)}
 
 																	{/* TAG CHIP */}
-																	{item.task?.tag && (() => {
-																		const tagInfo = TAGS.find((t) => t.label === item.task?.tag);
-																		return tagInfo ? (
-																			<span
-																				className="px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider shrink-0 text-[8px] shadow-sm backdrop-blur-sm"
-																				style={{
-																					backgroundColor: `${tagInfo.color}90`,
-																					color: "#fff",
-																					border: `1px solid ${tagInfo.color}`,
-																				}}
-																			>
-																				{item.task.tag}
-																			</span>
-																		) : null;
-																	})()}
+																	{item.task?.tag &&
+																		(() => {
+																			const tagInfo = TAGS.find(
+																				(t) => t.label === item.task?.tag,
+																			);
+																			return tagInfo ? (
+																				<span
+																					className="px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider shrink-0 text-[8px] shadow-sm backdrop-blur-sm"
+																					style={{
+																						backgroundColor: `${tagInfo.color}90`,
+																						color: "#fff",
+																						border: `1px solid ${tagInfo.color}`,
+																					}}
+																				>
+																					{item.task.tag}
+																				</span>
+																			) : null;
+																		})()}
 																</div>
 
 																{/* Compact content */}
@@ -771,7 +787,9 @@ export default function JournalView({
 																			<Pencil className="w-3 h-3" />
 																		</button>
 																		<button
-																			onClick={() => onDeleteTask(item.originalId)}
+																			onClick={() =>
+																				onDeleteTask(item.originalId)
+																			}
 																			className="p-1 text-gray-400 hover:text-red-500 transition-colors"
 																			title="Delete task"
 																		>
@@ -826,7 +844,9 @@ export default function JournalView({
 																			<Pencil className="w-3.5 h-3.5" />
 																		</button>
 																		<button
-																			onClick={() => onDeleteTask(item.originalId)}
+																			onClick={() =>
+																				onDeleteTask(item.originalId)
+																			}
 																			className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
 																			title="Delete task"
 																		>
@@ -843,10 +863,14 @@ export default function JournalView({
 																			: "Scheduled"}
 																		:{" "}
 																		{item.task?.startAt && item.task?.endAt
-																			? `${new Date(item.task.startAt).toLocaleTimeString([], {
+																			? `${new Date(
+																					item.task.startAt,
+																				).toLocaleTimeString([], {
 																					hour: "numeric",
 																					minute: "2-digit",
-																				})} → ${new Date(item.task.endAt).toLocaleTimeString([], {
+																				})} → ${new Date(
+																					item.task.endAt,
+																				).toLocaleTimeString([], {
 																					hour: "numeric",
 																					minute: "2-digit",
 																				})}`
@@ -956,21 +980,24 @@ export default function JournalView({
 																		)}
 
 																		{/* TAG CHIP */}
-																		{item.task?.tag && (() => {
-																			const tagInfo = TAGS.find((t) => t.label === item.task?.tag);
-																			return tagInfo ? (
-																				<span
-																					className="px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider shrink-0 text-[8px] shadow-sm backdrop-blur-sm"
-																					style={{
-																						backgroundColor: `${tagInfo.color}90`,
-																						color: "#fff",
-																						border: `1px solid ${tagInfo.color}`,
-																					}}
-																				>
-																					{item.task.tag}
-																				</span>
-																			) : null;
-																		})()}
+																		{item.task?.tag &&
+																			(() => {
+																				const tagInfo = TAGS.find(
+																					(t) => t.label === item.task?.tag,
+																				);
+																				return tagInfo ? (
+																					<span
+																						className="px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider shrink-0 text-[8px] shadow-sm backdrop-blur-sm"
+																						style={{
+																							backgroundColor: `${tagInfo.color}90`,
+																							color: "#fff",
+																							border: `1px solid ${tagInfo.color}`,
+																						}}
+																					>
+																						{item.task.tag}
+																					</span>
+																				) : null;
+																			})()}
 																	</div>
 
 																	{/* Compact content */}
@@ -1164,13 +1191,11 @@ export default function JournalView({
 			</div>
 
 			{/* Input Bar */}
-			<div
-				className={`p-6 border-t ${darkMode ? "bg-gray-950 border-gray-800" : "bg-white border-gray-100"}`}
-			>
-				<div className="max-w-2xl mx-auto">
+			<div className={`pb-4`}>
+				<div className="w-full mx-auto">
 					<form onSubmit={handleSubmit} className="relative">
 						<div
-							className={`p-2 rounded-[24px] border transition-all flex flex-col gap-2 ${darkMode ? "bg-gray-900 border-gray-800" : "bg-gray-50 border-gray-100"}`}
+							className={`p-2 border rounded-[32px] transition-all flex flex-col gap-2 ${darkMode ? "bg-gray-900 border-gray-800" : "bg-gray-50 border-gray-100"}`}
 						>
 							{/* Type Selector Pill Bar */}
 							<div className="flex items-center justify-between gap-2 px-2 pt-1 border-b border-gray-100 dark:border-gray-800/60 pb-2">
@@ -1190,7 +1215,6 @@ export default function JournalView({
 										</button>
 									))}
 								</div>
-
 							</div>
 
 							{/* Category Selector Pill Bar */}

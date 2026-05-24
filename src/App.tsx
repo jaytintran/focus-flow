@@ -64,10 +64,7 @@ export default function App() {
 	const [showIconPicker, setShowIconPicker] = useState(false);
 	const [inputMode, setInputMode] = useState<"search" | "quickadd">("quickadd");
 
-	const [showCompleted, setShowCompleted] = useState<boolean>(() => {
-		const saved = localStorage.getItem("focusflow_showcompleted");
-		return saved ? JSON.parse(saved) : true; // default to showing completed
-	});
+	const [showCompleted, setShowCompleted] = useState<boolean>(true);
 	const [showScheduled, setShowScheduled] = useState<boolean>(true);
 
 	// Modals/View state
@@ -115,26 +112,25 @@ export default function App() {
 					savedTimerStartTime,
 					savedInitialSpentTime,
 				] = await Promise.all([
-					db.getItem("focusflow_tasks"),
-					db.getItem("focusflow_categories"),
-					db.getItem("focusflow_journal"),
-					db.getItem("focusflow_darkmode"),
-					db.getItem("focusflow_viewmode"),
-					db.getItem("focusflow_layouttype"),
-					db.getItem("focusflow_showalltasks"),
-					db.getItem("focusflow_showcompleted"),
-					db.getItem("focusflow_activetaskid"),
-					db.getItem("focusflow_timeractive"),
-					db.getItem("focusflow_timerlasttick"),
-					db.getItem("focusflow_timerstarttime"),
-					db.getItem("focusflow_initialspenttime"),
+					db.getTasks(),
+					db.getCategories(),
+					db.getJournalEntries(),
+					db.getSetting("focusflow_darkmode"),
+					db.getSetting("focusflow_viewmode"),
+					db.getSetting("focusflow_layouttype"),
+					db.getSetting("focusflow_showalltasks"),
+					db.getSetting("focusflow_showcompleted"),
+					db.getSetting("focusflow_activetaskid"),
+					db.getSetting("focusflow_timeractive"),
+					db.getSetting("focusflow_timerlasttick"),
+					db.getSetting("focusflow_timerstarttime"),
+					db.getSetting("focusflow_initialspenttime"),
 				]);
 
-				let tasksData: Task[] = [];
-				if (savedTasks) tasksData = JSON.parse(savedTasks);
+				let tasksData = savedTasks;
 
-				if (savedCategories) setCategories(JSON.parse(savedCategories));
-				if (savedJournal) setJournalEntries(JSON.parse(savedJournal));
+				if (savedCategories.length > 0) setCategories(savedCategories);
+				if (savedJournal.length > 0) setJournalEntries(savedJournal);
 				if (savedDarkMode) setDarkMode(savedDarkMode === "true");
 				if (savedViewMode) setViewMode(savedViewMode as ViewMode);
 				if (savedLayoutType) setLayoutType(savedLayoutType as LayoutType);
@@ -178,8 +174,8 @@ export default function App() {
 							);
 							startTimeValue = Date.now();
 							initialSpentValue = updatedTask ? updatedTask.spentTime : 0;
-							db.setItem("focusflow_timerstarttime", startTimeValue.toString());
-							db.setItem(
+							db.setSetting("focusflow_timerstarttime", startTimeValue.toString());
+							db.setSetting(
 								"focusflow_initialspenttime",
 								initialSpentValue.toString(),
 							);
@@ -215,32 +211,32 @@ export default function App() {
 			isTimerTickRef.current = false;
 			return;
 		}
-		db.setItem("focusflow_tasks", JSON.stringify(tasks));
+		db.syncTasks(tasks);
 	}, [tasks, isDataLoaded]);
 
 	useEffect(() => {
 		if (!isDataLoaded) return;
-		db.setItem("focusflow_categories", JSON.stringify(categories));
+		db.syncCategories(categories);
 	}, [categories, isDataLoaded]);
 
 	useEffect(() => {
 		if (!isDataLoaded) return;
-		db.setItem("focusflow_showalltasks", JSON.stringify(showAllTasks));
+		db.setSetting("focusflow_showalltasks", JSON.stringify(showAllTasks));
 	}, [showAllTasks, isDataLoaded]);
 
 	useEffect(() => {
 		if (!isDataLoaded) return;
-		db.setItem("focusflow_showcompleted", JSON.stringify(showCompleted));
+		db.setSetting("focusflow_showcompleted", JSON.stringify(showCompleted));
 	}, [showCompleted, isDataLoaded]);
 
 	useEffect(() => {
 		if (!isDataLoaded) return;
-		db.setItem("focusflow_journal", JSON.stringify(journalEntries));
+		db.syncJournalEntries(journalEntries);
 	}, [journalEntries, isDataLoaded]);
 
 	useEffect(() => {
 		if (!isDataLoaded) return;
-		db.setItem("focusflow_darkmode", darkMode.toString());
+		db.setSetting("focusflow_darkmode", darkMode.toString());
 		if (darkMode) {
 			document.documentElement.classList.add("dark");
 		} else {
@@ -250,22 +246,22 @@ export default function App() {
 
 	useEffect(() => {
 		if (!isDataLoaded) return;
-		db.setItem("focusflow_viewmode", viewMode);
+		db.setSetting("focusflow_viewmode", viewMode);
 	}, [viewMode, isDataLoaded]);
 
 	useEffect(() => {
 		if (!isDataLoaded) return;
-		db.setItem("focusflow_layouttype", layoutType);
+		db.setSetting("focusflow_layouttype", layoutType);
 	}, [layoutType, isDataLoaded]);
 
 	useEffect(() => {
 		if (!isDataLoaded) return;
-		db.setItem("focusflow_activetaskid", activeTaskId || "");
+		db.setSetting("focusflow_activetaskid", activeTaskId || "");
 	}, [activeTaskId, isDataLoaded]);
 
 	useEffect(() => {
 		if (!isDataLoaded) return;
-		db.setItem("focusflow_timeractive", timerActive.toString());
+		db.setSetting("focusflow_timeractive", timerActive.toString());
 	}, [timerActive, isDataLoaded]);
 
 	// Daily habit reset
@@ -307,8 +303,8 @@ export default function App() {
 				const now = Date.now();
 				timerStartTimeRef.current = now;
 				initialSpentTimeRef.current = currentSpent;
-				db.setItem("focusflow_timerstarttime", now.toString());
-				db.setItem("focusflow_initialspenttime", currentSpent.toString());
+				db.setSetting("focusflow_timerstarttime", now.toString());
+				db.setSetting("focusflow_initialspenttime", currentSpent.toString());
 			}
 
 			// Tick every second using elapsed time calculation (stale-closure proof)
@@ -326,7 +322,7 @@ export default function App() {
 							: t,
 					),
 				);
-				db.setItem("focusflow_timerlasttick", now.toString());
+				db.setSetting("focusflow_timerlasttick", now.toString());
 			}, 1000);
 		} else {
 			if (timerStartTimeRef.current !== null && isDataLoaded) {
@@ -336,14 +332,15 @@ export default function App() {
 				timerStartTimeRef.current = null;
 				initialSpentTimeRef.current = 0;
 
-				db.removeItem("focusflow_timerstarttime");
-				db.removeItem("focusflow_initialspenttime");
+				db.removeSetting("focusflow_timerstarttime");
+				db.removeSetting("focusflow_initialspenttime");
 
 				setTasks((prevTasks) => {
 					const updated = prevTasks.map((t) =>
 						t.id === activeTaskId ? { ...t, spentTime: finalTime } : t,
 					);
-					db.setItem("focusflow_tasks", JSON.stringify(updated));
+					const updatedTask = updated.find((t) => t.id === activeTaskId);
+					if (updatedTask) db.putTask(updatedTask);
 					return updated;
 				});
 			}
@@ -369,7 +366,8 @@ export default function App() {
 					const updated = prevTasks.map((t) =>
 						t.id === activeTaskId ? { ...t, spentTime: finalTime } : t,
 					);
-					db.setItem("focusflow_tasks", JSON.stringify(updated));
+					const updatedTask = updated.find((t) => t.id === activeTaskId);
+					if (updatedTask) db.putTask(updatedTask);
 					return updated;
 				});
 			} else if (
@@ -591,8 +589,8 @@ export default function App() {
 				const now = Date.now();
 				timerStartTimeRef.current = now;
 				initialSpentTimeRef.current = 0;
-				db.setItem("focusflow_timerstarttime", now.toString());
-				db.setItem("focusflow_initialspenttime", "0");
+				db.setSetting("focusflow_timerstarttime", now.toString());
+				db.setSetting("focusflow_initialspenttime", "0");
 			}
 			setTasks(
 				tasks.map((t) => (t.id === activeTaskId ? { ...t, spentTime: 0 } : t)),
