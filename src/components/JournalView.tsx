@@ -19,6 +19,7 @@ import {
 	ChevronDown,
 	Wand2,
 	ArrowLeftIcon,
+	Link,
 } from "lucide-react";
 import { JournalEntry, Task, JournalType, Category } from "../types";
 import { DEFAULT_CATEGORIES, TAGS } from "../constants";
@@ -94,6 +95,8 @@ export default function JournalView({
 				type: "Task" as JournalType,
 				timestamp: t.completedAt!,
 				categoryId: t.categoryId,
+				linkedTaskId: undefined as string | undefined,
+				linkedTaskName: undefined as string | undefined,
 				originalId: t.id,
 				isCompletedTask: true,
 				isScheduledActiveTask: false,
@@ -116,6 +119,8 @@ export default function JournalView({
 					type: "Task" as JournalType,
 					timestamp,
 					categoryId: t.categoryId,
+					linkedTaskId: undefined as string | undefined,
+					linkedTaskName: undefined as string | undefined,
 					originalId: t.id,
 					isCompletedTask: false,
 					isScheduledActiveTask: true,
@@ -129,6 +134,8 @@ export default function JournalView({
 			type: e.type,
 			timestamp: e.timestamp,
 			categoryId: e.categoryId,
+			linkedTaskId: e.linkedTaskId,
+			linkedTaskName: e.linkedTaskName,
 			originalId: e.id,
 			isCompletedTask: false,
 			isScheduledActiveTask: false,
@@ -356,6 +363,36 @@ export default function JournalView({
 	});
 
 	const weekdays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+	const journalTypeOptions: { label: string; value: JournalType; className: string }[] = [
+		{
+			label: "Task",
+			value: "Task",
+			className: "bg-green-500 text-white shadow-lg",
+		},
+		{
+			label: "Event",
+			value: "Event",
+			className: "bg-orange-500 text-white shadow-lg",
+		},
+		{
+			label: "Log",
+			value: "SessionLog",
+			className: "bg-blue-500 text-white shadow-lg",
+		},
+		{
+			label: "Achievement",
+			value: "Achievement",
+			className: "bg-amber-500 text-white shadow-lg",
+		},
+	];
+	const getTypeChipClass = (entryType: JournalType) => {
+		if (entryType === "Task") return "bg-green-500/10 text-green-500";
+		if (entryType === "SessionLog") return "bg-blue-500/10 text-blue-500";
+		if (entryType === "Achievement") return "bg-amber-500/10 text-amber-500";
+		return "bg-orange-500/10 text-orange-500";
+	};
+	const getTypeLabel = (entryType: JournalType) =>
+		entryType === "SessionLog" ? "Log" : entryType;
 
 	return (
 		<motion.div
@@ -915,13 +952,9 @@ export default function JournalView({
 
 																		{/* TYPE CHIP */}
 																		<span
-																			className={`px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider shrink-0 text-[8px] shadow-sm backdrop-blur-sm ${
-																				item.type === "Task"
-																					? "bg-green-500/90 text-white border border-green-400"
-																					: "bg-orange-500/90 text-white border border-orange-400"
-																			}`}
+																			className={`px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider shrink-0 text-[8px] shadow-sm backdrop-blur-sm ${getTypeChipClass(item.type)}`}
 																		>
-																			{item.type}
+																			{getTypeLabel(item.type)}
 																		</span>
 
 																		{/* CATEGORY CHIP */}
@@ -1006,6 +1039,14 @@ export default function JournalView({
 																			</div>
 																		)}
 																	</div>
+																	{item.linkedTaskName && (
+																		<div className="mt-1.5 flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-blue-500">
+																			<Link className="w-3 h-3" />
+																			<span className="truncate">
+																				While On: {item.linkedTaskName}
+																			</span>
+																		</div>
+																	)}
 																</>
 															) : (
 																// NORMAL MODE
@@ -1031,9 +1072,9 @@ export default function JournalView({
 																				<Package className="w-4 h-4 text-orange-500" />
 																			)}
 																			<span
-																				className={`text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded ${item.type === "Task" ? "bg-green-500/10 text-green-500" : "bg-orange-500/10 text-orange-500"}`}
+																				className={`text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded ${getTypeChipClass(item.type)}`}
 																			>
-																				{item.type}
+																				{getTypeLabel(item.type)}
 																			</span>
 																			<span className="text-[10px] font-mono text-gray-400">
 																				{item.task?.startAt && item.task?.endAt
@@ -1080,6 +1121,20 @@ export default function JournalView({
 																	>
 																		{item.content}
 																	</p>
+																	{item.linkedTaskName && (
+																		<div
+																			className={`mt-2 inline-flex max-w-full items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+																				darkMode
+																					? "bg-blue-500/10 text-blue-300"
+																					: "bg-blue-50 text-blue-600"
+																			}`}
+																		>
+																			<Link className="w-3 h-3 shrink-0" />
+																			<span className="truncate">
+																				While On: {item.linkedTaskName}
+																			</span>
+																		</div>
+																	)}
 																	{item.categoryId &&
 																		categories.find(
 																			(c) => c.id === item.categoryId,
@@ -1139,21 +1194,21 @@ export default function JournalView({
 						>
 							{/* Type Selector Pill Bar */}
 							<div className="flex items-center justify-between gap-2 px-2 pt-1 border-b border-gray-100 dark:border-gray-800/60 pb-2">
-								<div className="flex items-center gap-2">
-									<button
-										type="button"
-										onClick={() => setType("Event")}
-										className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${type === "Event" ? "bg-orange-500 text-white shadow-lg" : "text-gray-500 hover:text-gray-300"}`}
-									>
-										General Entry
-									</button>
-									<button
-										type="button"
-										onClick={() => setType("Task")}
-										className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${type === "Task" ? "bg-green-500 text-white shadow-lg" : "text-gray-500 hover:text-gray-300"}`}
-									>
-										Quick Log
-									</button>
+								<div className="flex flex-wrap items-center gap-1.5">
+									{journalTypeOptions.map((option) => (
+										<button
+											key={option.value}
+											type="button"
+											onClick={() => setType(option.value)}
+											className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+												type === option.value
+													? option.className
+													: "text-gray-500 hover:text-gray-300"
+											}`}
+										>
+											{option.label}
+										</button>
+									))}
 								</div>
 
 								{/* Mobile Back Button */}
@@ -1213,9 +1268,13 @@ export default function JournalView({
 									value={content}
 									onChange={(e) => handleContentChange(e.target.value)}
 									placeholder={
-										type === "Event"
-											? "Write a journal entry... Use #Work for category @3pm for time"
-											: "Log something you just did... Use #Work @3pm"
+										type === "Task"
+											? "Capture a task note... Use #Work @3pm"
+											: type === "SessionLog"
+												? "Log what happened... Use #Work @3pm"
+												: type === "Achievement"
+													? "Record a win... Use #Work @3pm"
+													: "Write a journal entry... Use #Work for category @3pm for time"
 									}
 									className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none placeholder-gray-500 text-gray-800 dark:text-gray-100"
 								/>
