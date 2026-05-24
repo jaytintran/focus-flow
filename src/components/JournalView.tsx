@@ -2,13 +2,11 @@ import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
 	History,
-	Plus,
 	Send,
 	Clock,
 	CheckCircle2,
 	Calendar as CalendarIcon,
 	Zap,
-	ArrowLeft,
 	X,
 	Circle,
 	Trash2,
@@ -18,16 +16,14 @@ import {
 	ChevronRight,
 	ChevronDown,
 	Wand2,
-	ArrowLeftIcon,
 	Link,
 } from "lucide-react";
 import { JournalEntry, Task, JournalType, Category } from "../types";
-import { DEFAULT_CATEGORIES, TAGS } from "../constants";
-import { generateId, formatScheduledTime, formatScheduledDate } from "../utils";
+import { TAGS } from "../constants";
+import { formatScheduledTime, formatScheduledDate } from "../utils";
 import { CategoryIcon } from "./CategoryIcon";
 
 interface JournalViewProps {
-	onClose: () => void;
 	tasks: Task[];
 	categories: Category[];
 	journalEntries: JournalEntry[];
@@ -41,7 +37,6 @@ interface JournalViewProps {
 }
 
 export default function JournalView({
-	onClose,
 	tasks,
 	categories,
 	journalEntries,
@@ -396,23 +391,17 @@ export default function JournalView({
 
 	return (
 		<motion.div
-			initial={{ x: "100%" }}
-			animate={{ x: 0 }}
-			exit={{ x: "100%" }}
-			transition={{ type: "spring", damping: 25, stiffness: 200 }}
-			className={`fixed inset-0 z-[100] flex flex-col ${darkMode ? "bg-gray-950 text-white" : "bg-white text-gray-900"}`}
+			initial={{ opacity: 0, y: 8 }}
+			animate={{ opacity: 1, y: 0 }}
+			exit={{ opacity: 0, y: 8 }}
+			transition={{ duration: 0.18, ease: "easeOut" }}
+			className={`flex-1 min-h-0 flex flex-col rounded-3xl overflow-hidden ${darkMode ? "bg-gray-950 text-white" : "bg-white text-gray-900"}`}
 		>
 			{/* Header */}
 			<div
 				className={`journal-header px-6 py-6 border-b flex items-center justify-between ${darkMode ? "border-gray-800 bg-gray-950/80" : "border-gray-100 bg-white/80"} backdrop-blur-md sticky top-0 z-10`}
 			>
 				<div className="flex items-center gap-4">
-					{/* <button
-						onClick={onClose}
-						className={`p-2 rounded-2xl transition-all ${darkMode ? "bg-gray-900 hover:bg-gray-800 text-gray-400" : "bg-gray-50 hover:bg-gray-100 text-gray-500"}`}
-					>
-						<ArrowLeft className="w-6 h-6" />
-					</button> */}
 					<div>
 						<h2 className="text-xl font-black">Daily Journal</h2>
 						<p className="text-[10px] uppercase font-bold tracking-widest text-blue-500">
@@ -1211,14 +1200,6 @@ export default function JournalView({
 									))}
 								</div>
 
-								{/* Mobile Back Button */}
-								<button
-									onClick={onClose}
-									className={`md:hidden p-3 rounded-full shadow-lg transition-all active:scale-95`}
-									style={{ boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)" }}
-								>
-									<ArrowLeftIcon className="w-5 h-5" />
-								</button>
 							</div>
 
 							{/* Category Selector Pill Bar */}

@@ -36,6 +36,8 @@ import * as db from "./db";
 import { HabitRow } from "./components/HabitRow";
 import { Capacitor } from "@capacitor/core";
 
+type ActiveView = "main" | "journal" | "inbox";
+
 export default function App() {
 	// State
 	const [tasks, setTasks] = useState<Task[]>([]);
@@ -44,6 +46,7 @@ export default function App() {
 	const [darkMode, setDarkMode] = useState(false);
 	const [viewMode, setViewMode] = useState<ViewMode>("normal");
 	const [layoutType, setLayoutType] = useState<LayoutType>("list");
+	const [activeView, setActiveView] = useState<ActiveView>("main");
 	const [showAllTasks, setShowAllTasks] = useState<boolean>(true);
 	const [isDataLoaded, setIsDataLoaded] = useState(false);
 	const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
@@ -69,8 +72,6 @@ export default function App() {
 
 	// Modals/View state
 	const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-	const [isJournalOpen, setIsJournalOpen] = useState(false);
-	const [isInboxOpen, setIsInboxOpen] = useState(false);
 	const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 	const [editingTask, setEditingTask] = useState<Task | null>(null);
 	const [taskModalDefaultRecurring, setTaskModalDefaultRecurring] =
@@ -913,7 +914,6 @@ export default function App() {
 										darkMode={darkMode}
 										onToggleViewMode={toggleViewMode}
 										onToggleDarkMode={() => setDarkMode(!darkMode)}
-										onOpenJournal={() => setIsJournalOpen(true)}
 									/>
 								</motion.div>
 							</AnimatePresence>
@@ -922,7 +922,40 @@ export default function App() {
 				</div>
 			</header>
 
+			<nav className="px-4 pb-3 shrink-0">
+				<div
+					className={`grid grid-cols-3 gap-1 p-1 rounded-2xl border shadow-sm ${
+						darkMode
+							? "bg-gray-900 border-gray-800"
+							: "bg-white border-gray-100"
+					}`}
+				>
+					{([
+						["main", "Main"],
+						["journal", "Journal"],
+						["inbox", "Inbox"],
+					] as const).map(([value, label]) => (
+						<button
+							key={value}
+							type="button"
+							onClick={() => setActiveView(value)}
+							className={`py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${
+								activeView === value
+									? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+									: darkMode
+										? "text-gray-500 hover:text-gray-300"
+										: "text-gray-400 hover:text-gray-700"
+							}`}
+						>
+							{label}
+						</button>
+					))}
+				</div>
+			</nav>
+
 			<main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 flex flex-col overflow-hidden space-y-4 sm:space-y-6 min-h-0">
+				{activeView === "main" ? (
+					<>
 				{/* Stats Section */}
 				<section className="grid grid-cols-4 gap-3 sm:gap-4 shrink-0">
 					<div
@@ -1407,58 +1440,48 @@ export default function App() {
 							</AnimatePresence>
 						)}
 				</section>
+					</>
+				) : activeView === "journal" ? (
+					<JournalView
+						tasks={tasks}
+						categories={categories}
+						journalEntries={journalEntries}
+						onAddEntry={handleAddJournalEntry}
+						onUpdateEntry={handleUpdateJournalEntry}
+						onDeleteEntry={handleDeleteJournalEntry}
+						onToggleCompleteTask={handleToggleComplete}
+						onDeleteTask={handleDeleteTask}
+						onEditTask={(t) => {
+							setEditingTask(t);
+							setIsTaskModalOpen(true);
+						}}
+						darkMode={darkMode}
+					/>
+				) : (
+					<InboxView
+						tasks={tasks}
+						categories={categories}
+						onAddTask={handleAddInboxTask}
+						onAssignCategory={handleAssignCategory}
+						onUpdateTask={handleUpdateInboxTask}
+						onDeleteTask={handleDeleteTask}
+						darkMode={darkMode}
+					/>
+				)}
 			</main>
 
 			{/* Floating Action Buttons */}
-			<div className="fixed right-4 bottom-20 sm:right-6 sm:bottom-12 md:right-12 md:bottom-12 flex items-center gap-3 z-50">
-				{/* Inbox Toggle FAB */}
+			<div className="fixed right-4 bottom-6 flex items-center gap-3 z-50">
 				<motion.button
 					whileTap={{ scale: 0.95 }}
-					onClick={() => setIsInboxOpen(true)}
-					className={`w-14 h-14 sm:w-16 sm:h-16 rounded-[24px] shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 group ${
-						isInboxOpen
-							? "bg-purple-600 text-white shadow-purple-500/40"
-							: darkMode
-								? "bg-gray-800 text-gray-300 shadow-black/40 border border-gray-700"
-								: "bg-white text-gray-600 shadow-gray-400/30 border border-gray-200"
-					}`}
+					onClick={() => {
+						setEditingTask(null);
+						setIsTaskModalOpen(true);
+					}}
+					className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-[24px] shadow-2xl shadow-blue-500/40 flex items-center justify-center transition-all hover:scale-110 active:scale-95 group"
 				>
-					<Inbox className="w-6 h-6 sm:w-7 sm:h-7" />
+					<Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />
 				</motion.button>
-
-				{/* Journal Toggle FAB */}
-				<motion.button
-					whileTap={{ scale: 0.95 }}
-					onClick={() => setIsJournalOpen(true)}
-					className={`w-14 h-14 sm:w-16 sm:h-16 rounded-[24px] shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 group ${
-						isJournalOpen
-							? "bg-blue-600 text-white shadow-blue-500/40"
-							: darkMode
-								? "bg-gray-800 text-gray-300 shadow-black/40 border border-gray-700"
-								: "bg-white text-gray-600 shadow-gray-400/30 border border-gray-200"
-					}`}
-				>
-					<Icons.FileText className="w-6 h-6 sm:w-7 sm:h-7" />
-				</motion.button>
-
-				{/* Add Task FAB - hidden in Journal view */}
-				<AnimatePresence>
-					{!isJournalOpen && (
-						<motion.button
-							initial={{ scale: 0, opacity: 0 }}
-							animate={{ scale: 1, opacity: 1 }}
-							exit={{ scale: 0, opacity: 0 }}
-							transition={{ duration: 0.2 }}
-							onClick={() => {
-								setEditingTask(null);
-								setIsTaskModalOpen(true);
-							}}
-							className="w-14 h-14 sm:w-16 sm:h-16 bg-blue-600 hover:bg-blue-700 text-white rounded-[24px] shadow-2xl shadow-blue-500/40 flex items-center justify-center transition-all hover:scale-110 active:scale-95 group"
-						>
-							<Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />
-						</motion.button>
-					)}
-				</AnimatePresence>
 			</div>
 
 			{/* Modals */}
@@ -1506,42 +1529,6 @@ export default function App() {
 				onToggleShowAllTasks={setShowAllTasks}
 			/>
 
-			<AnimatePresence>
-				{isJournalOpen && (
-					<JournalView
-						onClose={() => setIsJournalOpen(false)}
-						tasks={tasks}
-						categories={categories}
-						journalEntries={journalEntries}
-						onAddEntry={handleAddJournalEntry}
-						onUpdateEntry={handleUpdateJournalEntry}
-						onDeleteEntry={handleDeleteJournalEntry}
-						onToggleCompleteTask={handleToggleComplete}
-						onDeleteTask={handleDeleteTask}
-						onEditTask={(t) => {
-							setEditingTask(t);
-							setIsTaskModalOpen(true);
-						}}
-						darkMode={darkMode}
-					/>
-				)}
-			</AnimatePresence>
-
-			<AnimatePresence>
-				{isInboxOpen && (
-					<InboxView
-						isOpen={isInboxOpen}
-						onClose={() => setIsInboxOpen(false)}
-						tasks={tasks}
-						categories={categories}
-						onAddTask={handleAddInboxTask}
-						onAssignCategory={handleAssignCategory}
-						onUpdateTask={handleUpdateInboxTask}
-						onDeleteTask={handleDeleteTask}
-						darkMode={darkMode}
-					/>
-				)}
-			</AnimatePresence>
 		</div>
 	);
 }

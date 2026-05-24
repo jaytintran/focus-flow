@@ -9,7 +9,6 @@ import {
 	Calendar,
 	Clock,
 	Inbox as InboxIcon,
-	ArrowLeft,
 } from "lucide-react";
 import { Task, Category, Tag } from "../types";
 import { CategoryIcon } from "./CategoryIcon";
@@ -22,8 +21,6 @@ import {
 } from "../utils";
 
 interface InboxViewProps {
-	isOpen: boolean;
-	onClose: () => void;
 	tasks: Task[];
 	categories: Category[];
 	onAddTask: (name: string) => void;
@@ -34,8 +31,6 @@ interface InboxViewProps {
 }
 
 export default function InboxView({
-	isOpen,
-	onClose,
 	tasks,
 	categories,
 	onAddTask,
@@ -119,15 +114,13 @@ export default function InboxView({
 	};
 
 	return (
-		<AnimatePresence>
-			{isOpen && (
-				<motion.div
-					initial={{ x: "100%" }}
-					animate={{ x: 0 }}
-					exit={{ x: "100%" }}
-					transition={{ type: "spring", damping: 25, stiffness: 200 }}
-					className={`fixed inset-0 z-[100] flex flex-col ${darkMode ? "bg-gray-950 text-white" : "bg-white text-gray-900"}`}
-				>
+		<motion.div
+			initial={{ opacity: 0, y: 8 }}
+			animate={{ opacity: 1, y: 0 }}
+			exit={{ opacity: 0, y: 8 }}
+			transition={{ duration: 0.18, ease: "easeOut" }}
+			className={`flex-1 min-h-0 flex flex-col rounded-3xl overflow-hidden ${darkMode ? "bg-gray-950 text-white" : "bg-white text-gray-900"}`}
+		>
 					{/* Header */}
 					<div
 						className={`app-header px-6 py-6 border-b flex items-center justify-between ${darkMode ? "border-gray-800 bg-gray-950/80" : "border-gray-100 bg-white/80"} backdrop-blur-md sticky top-0 z-10`}
@@ -437,17 +430,6 @@ export default function InboxView({
 						</div>
 					</div>
 
-					{/* Mobile Back Button */}
-					<div className={`md:hidden fixed bottom-6 right-6 z-50`}>
-						<button
-							onClick={onClose}
-							className="p-4 rounded-full bg-purple-600 text-white shadow-2xl hover:bg-purple-700 transition-all active:scale-95"
-						>
-							<ArrowLeft className="w-6 h-6" />
-						</button>
-					</div>
-				</motion.div>
-			)}
-		</AnimatePresence>
+		</motion.div>
 	);
 }

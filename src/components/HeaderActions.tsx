@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { AlignLeft, Sun, Moon, History, ChevronDown } from "lucide-react";
+import { AlignLeft, Sun, Moon, ChevronDown } from "lucide-react";
 import { ViewMode } from "../types";
 
 interface HeaderActionsProps {
@@ -8,7 +8,6 @@ interface HeaderActionsProps {
 	darkMode: boolean;
 	onToggleViewMode: () => void;
 	onToggleDarkMode: () => void;
-	onOpenJournal: () => void;
 }
 
 export const HeaderActions: React.FC<HeaderActionsProps> = ({
@@ -16,7 +15,6 @@ export const HeaderActions: React.FC<HeaderActionsProps> = ({
 	darkMode,
 	onToggleViewMode,
 	onToggleDarkMode,
-	onOpenJournal,
 }) => {
 	const [isOpen, setIsOpen] = useState(false);
 
@@ -99,23 +97,6 @@ export const HeaderActions: React.FC<HeaderActionsProps> = ({
 									</div>
 								</button>
 
-								<div className="h-px bg-gray-100 dark:bg-gray-800 my-1 mx-2" />
-
-								{/* Journal */}
-								<button
-									onClick={() => {
-										onOpenJournal();
-										setIsOpen(false);
-									}}
-									className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-colors ${
-										darkMode
-											? "hover:bg-gray-800 text-gray-400"
-											: "hover:bg-gray-50 text-gray-600"
-									}`}
-								>
-									<History className="w-4 h-4" />
-									<span className="text-sm font-bold">Journal</span>
-								</button>
 							</div>
 						</motion.div>
 					</>
