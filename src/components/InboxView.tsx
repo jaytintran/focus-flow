@@ -121,32 +121,9 @@ export default function InboxView({
 			transition={{ duration: 0.18, ease: "easeOut" }}
 			className={`flex-1 min-h-0 flex flex-col rounded-3xl overflow-hidden ${darkMode ? "bg-gray-950 text-white" : "bg-white text-gray-900"}`}
 		>
-					{/* Header */}
-					<div
-						className={`app-header px-6 py-6 border-b flex items-center justify-between ${darkMode ? "border-gray-800 bg-gray-950/80" : "border-gray-100 bg-white/80"} backdrop-blur-md sticky top-0 z-10`}
-					>
-						<div className="flex items-center gap-4">
-							<div>
-								<h2 className="text-xl font-black">Inbox</h2>
-								<p className="text-[10px] uppercase font-bold tracking-widest text-purple-500">
-									Quick Capture
-								</p>
-							</div>
-						</div>
-
-						<div className="flex items-center gap-2">
-							<div
-								className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase text-purple-500 ${darkMode ? "bg-purple-500/10" : "bg-purple-50"}`}
-							>
-								<InboxIcon className="w-3 h-3" />
-								{inboxTasks.length} Tasks
-							</div>
-						</div>
-					</div>
-
 					{/* Quick Add Bar */}
 					<div
-						className={`px-6 py-3 border-b ${darkMode ? "border-gray-800/80 bg-gray-950/40" : "border-gray-100 bg-gray-50/50"}`}
+						className={`px-3 py-2 border-b ${darkMode ? "border-gray-800/80 bg-gray-950/40" : "border-gray-100 bg-gray-50/50"}`}
 					>
 						<form onSubmit={handleQuickAdd} className="flex gap-2">
 							<input
@@ -162,6 +139,12 @@ export default function InboxView({
 							>
 								<Plus className="w-4 h-4" />
 							</button>
+							<div
+								className={`flex items-center gap-1.5 px-2.5 rounded-xl text-[10px] font-black uppercase text-purple-500 shrink-0 ${darkMode ? "bg-purple-500/10" : "bg-purple-50"}`}
+							>
+								<InboxIcon className="w-3 h-3" />
+								{inboxTasks.length}
+							</div>
 						</form>
 					</div>
 

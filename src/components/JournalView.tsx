@@ -397,64 +397,9 @@ export default function JournalView({
 			transition={{ duration: 0.18, ease: "easeOut" }}
 			className={`flex-1 min-h-0 flex flex-col rounded-3xl overflow-hidden ${darkMode ? "bg-gray-950 text-white" : "bg-white text-gray-900"}`}
 		>
-			{/* Header */}
+			{/* View Controls */}
 			<div
-				className={`journal-header px-6 py-6 border-b flex items-center justify-between ${darkMode ? "border-gray-800 bg-gray-950/80" : "border-gray-100 bg-white/80"} backdrop-blur-md sticky top-0 z-10`}
-			>
-				<div className="flex items-center gap-4">
-					<div>
-						<h2 className="text-xl font-black">Daily Journal</h2>
-						<p className="text-[10px] uppercase font-bold tracking-widest text-blue-500">
-							Activity & Wins
-						</p>
-					</div>
-				</div>
-
-				<div className="flex items-center gap-2">
-					{/* View Mode Selector */}
-					<div
-						className={`p-0.5 rounded-xl flex gap-1 ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}
-					>
-						<button
-							type="button"
-							onClick={() => setViewMode("normal")}
-							className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-								viewMode === "normal"
-									? darkMode
-										? "bg-gray-850 text-white shadow-lg"
-										: "bg-white text-gray-900 shadow-sm"
-									: "text-gray-400 hover:text-gray-350 dark:hover:text-gray-300"
-							}`}
-						>
-							Normal
-						</button>
-						<button
-							type="button"
-							onClick={() => setViewMode("mini")}
-							className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-								viewMode === "mini"
-									? darkMode
-										? "bg-gray-850 text-white shadow-lg"
-										: "bg-white text-gray-900 shadow-sm"
-									: "text-gray-400 hover:text-gray-350 dark:hover:text-gray-300"
-							}`}
-						>
-							Mini
-						</button>
-					</div>
-
-					<div
-						className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase text-blue-500 ${darkMode ? "bg-blue-500/10" : "bg-blue-50"}`}
-					>
-						<Zap className="w-3 h-3" />
-						{combinedItems.length} Entries
-					</div>
-				</div>
-			</div>
-
-			{/* Sub-Header Controls */}
-			<div
-				className={`px-6 py-3 border-b flex flex-wrap items-center justify-between gap-3 ${
+				className={`px-3 py-2 border-b flex flex-wrap items-center gap-2 ${
 					darkMode
 						? "border-gray-800/80 bg-gray-950/40"
 						: "border-gray-100 bg-gray-50/50"
@@ -493,7 +438,7 @@ export default function JournalView({
 				</div>
 
 				{/* Date Picker Button */}
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-2 ml-auto">
 					<button
 						type="button"
 						onClick={() => {
@@ -521,6 +466,44 @@ export default function JournalView({
 							className={`w-3.5 h-3.5 transition-transform duration-250 ${isCalendarOpen ? "rotate-180" : ""}`}
 						/>
 					</button>
+				</div>
+
+				<div
+					className={`p-0.5 rounded-xl flex gap-1 ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}
+				>
+					<button
+						type="button"
+						onClick={() => setViewMode("normal")}
+						className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+							viewMode === "normal"
+								? darkMode
+									? "bg-gray-850 text-white shadow-lg"
+									: "bg-white text-gray-900 shadow-sm"
+								: "text-gray-400 hover:text-gray-350 dark:hover:text-gray-300"
+						}`}
+					>
+						Normal
+					</button>
+					<button
+						type="button"
+						onClick={() => setViewMode("mini")}
+						className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+							viewMode === "mini"
+								? darkMode
+									? "bg-gray-850 text-white shadow-lg"
+									: "bg-white text-gray-900 shadow-sm"
+								: "text-gray-400 hover:text-gray-350 dark:hover:text-gray-300"
+						}`}
+					>
+						Mini
+					</button>
+				</div>
+
+				<div
+					className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-black uppercase text-blue-500 ${darkMode ? "bg-blue-500/10" : "bg-blue-50"}`}
+				>
+					<Zap className="w-3 h-3" />
+					{combinedItems.length}
 				</div>
 			</div>
 

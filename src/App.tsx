@@ -826,7 +826,7 @@ export default function App() {
 		>
 			{/* Header */}
 			<header
-				className={`app-header sticky top-0 z-40 ${darkMode ? "bg-gray-950/80 border-gray-800" : "bg-[#F8F9FE]/80 border-gray-100"} backdrop-blur-md px-4 sm:px-6 pt-[calc(env(safe-area-inset-top,0px)+12px)] pb-3 sm:py-4 mb-4 sm:mb-5 border-b`}
+				className={`app-header sticky top-0 z-40 ${darkMode ? "bg-gray-950/80 border-gray-800" : "bg-[#F8F9FE]/80 border-gray-100"} backdrop-blur-md px-4 sm:px-6 pt-[calc(env(safe-area-inset-top,0px)+12px)] pb-3 sm:py-4 border-b`}
 			>
 				<div className="w-full mx-auto flex items-center justify-between gap-4">
 					<WorkingBar
@@ -922,7 +922,7 @@ export default function App() {
 				</div>
 			</header>
 
-			<nav className="px-4 pb-3 shrink-0">
+			<nav className="px-4 py-2 shrink-0">
 				<div
 					className={`grid grid-cols-3 gap-1 p-1 rounded-2xl border shadow-sm ${
 						darkMode
@@ -953,7 +953,11 @@ export default function App() {
 				</div>
 			</nav>
 
-			<main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 flex flex-col overflow-hidden space-y-4 sm:space-y-6 min-h-0">
+			<main
+				className={`flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 flex flex-col overflow-hidden min-h-0 ${
+					activeView === "main" ? "space-y-4 sm:space-y-6" : "space-y-2"
+				}`}
+			>
 				{activeView === "main" ? (
 					<>
 				{/* Stats Section */}
@@ -1471,18 +1475,20 @@ export default function App() {
 			</main>
 
 			{/* Floating Action Buttons */}
-			<div className="fixed right-4 bottom-6 flex items-center gap-3 z-50">
-				<motion.button
-					whileTap={{ scale: 0.95 }}
-					onClick={() => {
-						setEditingTask(null);
-						setIsTaskModalOpen(true);
-					}}
-					className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-[24px] shadow-2xl shadow-blue-500/40 flex items-center justify-center transition-all hover:scale-110 active:scale-95 group"
-				>
-					<Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />
-				</motion.button>
-			</div>
+			{activeView === "main" && (
+				<div className="fixed right-4 bottom-6 flex items-center gap-3 z-50">
+					<motion.button
+						whileTap={{ scale: 0.95 }}
+						onClick={() => {
+							setEditingTask(null);
+							setIsTaskModalOpen(true);
+						}}
+						className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-[24px] shadow-2xl shadow-blue-500/40 flex items-center justify-center transition-all hover:scale-110 active:scale-95 group"
+					>
+						<Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />
+					</motion.button>
+				</div>
+			)}
 
 			{/* Modals */}
 			<TaskForm
