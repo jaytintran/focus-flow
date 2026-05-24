@@ -17,6 +17,7 @@ import {
 	parseSmartInput,
 	formatDateToInput,
 	formatDueDate,
+	formatDurationShort,
 	combineDateAndTime,
 } from "./utils";
 import { TaskRow } from "./components/TaskRow";
@@ -414,7 +415,11 @@ export default function App() {
 			createdAt: Date.now(),
 			isRecurring: taskData.isRecurring,
 			recurringIcon: taskData.recurringIcon,
+			recurringColor: taskData.recurringColor,
 			completedDates: [],
+			startAt: taskData.startAt,
+			duration: taskData.duration,
+			endAt: taskData.endAt,
 		};
 		setTasks([newTask, ...tasks]);
 	};
@@ -658,6 +663,27 @@ export default function App() {
 			type: entryData.type || "Event",
 			timestamp: entryData.timestamp || Date.now(),
 			categoryId: entryData.categoryId,
+			linkedTaskId: entryData.linkedTaskId,
+			linkedTaskName: entryData.linkedTaskName,
+		};
+		setJournalEntries([newEntry, ...journalEntries]);
+	};
+
+	const handleAddSessionLog = (
+		content: string,
+		type: "SessionLog" | "Achievement",
+		taskId: string,
+		taskName: string,
+		categoryId: string,
+	) => {
+		const newEntry: JournalEntry = {
+			id: generateId(),
+			content,
+			type,
+			timestamp: Date.now(),
+			categoryId,
+			linkedTaskId: taskId,
+			linkedTaskName: taskName,
 		};
 		setJournalEntries([newEntry, ...journalEntries]);
 	};
@@ -869,6 +895,7 @@ export default function App() {
 						onFinishTask={handleFinishWorking}
 						onDeleteTask={handleDeleteTask}
 						onReenterTask={handleReenterTask}
+						onAddSessionLog={handleAddSessionLog}
 						darkMode={darkMode}
 					/>
 
@@ -988,7 +1015,7 @@ export default function App() {
 										placeholder={
 											inputMode === "search"
 												? "Search tasks..."
-												: "Quick add: #tag !high !tomorrow"
+												: "Quick add: ?work !today at1pm for30m"
 										}
 										className="flex-1 bg-transparent px-2 py-2 text-xs font-bold outline-none border-none placeholder-gray-400 tracking-tight"
 									/>
@@ -1000,7 +1027,9 @@ export default function App() {
 									(parsedQuickAdd.categoryName ||
 										parsedQuickAdd.isRecurring ||
 										parsedQuickAdd.tag ||
-										parsedQuickAdd.relativeDate) && (
+										parsedQuickAdd.relativeDate ||
+										parsedQuickAdd.startTimeStr ||
+										parsedQuickAdd.durationMs) && (
 										<div className="absolute right-0 top-0 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none">
 											{parsedQuickAdd.categoryName && (
 												<span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">
@@ -1023,6 +1052,17 @@ export default function App() {
 													{formatDueDate(
 														formatDateToInput(parsedQuickAdd.relativeDate),
 													)}
+												</span>
+											)}
+											{parsedQuickAdd.startTimeStr && (
+												<span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold uppercase tracking-wide flex items-center gap-1 whitespace-nowrap shadow-md">
+													<Icons.Clock className="w-2.5 h-2.5" />
+													{parsedQuickAdd.startTimeStr}
+												</span>
+											)}
+											{parsedQuickAdd.durationMs && (
+												<span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">
+													{formatDurationShort(parsedQuickAdd.durationMs)}
 												</span>
 											)}
 										</div>

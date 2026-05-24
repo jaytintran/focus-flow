@@ -32,7 +32,7 @@ export interface Task {
 	inbox?: boolean; // Flag for inbox tasks
 }
 
-export type JournalType = "Task" | "Event";
+export type JournalType = "Task" | "Event" | "SessionLog" | "Achievement";
 
 export interface JournalEntry {
 	id: string;
@@ -40,4 +40,6 @@ export interface JournalEntry {
 	type: JournalType;
 	timestamp: number;
 	categoryId?: string;
+	linkedTaskId?: string;
+	linkedTaskName?: string;
 }

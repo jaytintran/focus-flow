@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
 	X,
@@ -21,6 +21,8 @@ import {
 	formatDateToInput,
 	combineDateAndTime,
 	formatTimeOfDate,
+	formatDurationShort,
+	formatDueDate,
 } from "../utils";
 import { CategoryIcon, CATEGORY_ICONS } from "./CategoryIcon";
 import { HABIT_COLORS } from "../colors";
@@ -72,6 +74,14 @@ export default function TaskForm({
 	const [startTime, setStartTime] = useState("");
 	const [duration, setDuration] = useState("");
 	const [showTooltip, setShowTooltip] = useState(false);
+	const parsedName = useMemo(() => parseSmartInput(name), [name]);
+	const hasParsedNameTokens =
+		!!parsedName.categoryName ||
+		!!parsedName.relativeDate ||
+		!!parsedName.startTimeStr ||
+		!!parsedName.durationMs ||
+		!!parsedName.tag ||
+		!!parsedName.isRecurring;
 
 	useEffect(() => {
 		if (isOpen) {
@@ -130,7 +140,7 @@ export default function TaskForm({
 			}
 		}
 
-		if (durationMs && startTimeStr) {
+		if (durationMs) {
 			setDuration(String(Math.round(durationMs / (60 * 1000))));
 		}
 	};
@@ -173,6 +183,12 @@ export default function TaskForm({
 	};
 
 	const selectedCat = categories.find((c) => c.id === categoryId);
+	const parsedCategory = parsedName.categoryName
+		? categories.find(
+				(c) =>
+					c.name.toLowerCase() === parsedName.categoryName?.toLowerCase(),
+			)
+		: undefined;
 
 	return (
 		<AnimatePresence>
@@ -298,21 +314,21 @@ export default function TaskForm({
 															</p>
 															<p>
 																<span className="text-green-300 font-mono font-bold">
-																	@2pm
+																	at2pm
 																</span>
 																{" · "}
 																<span className="text-green-300 font-mono font-bold">
-																	@14:30
+																	at1pm30
 																</span>{" "}
 																→ Start time
 															</p>
 															<p>
 																<span className="text-orange-300 font-mono font-bold">
-																	~30m
+																	for30m
 																</span>
 																{" · "}
 																<span className="text-orange-300 font-mono font-bold">
-																	~1.5h
+																	for1h30
 																</span>{" "}
 																→ Duration
 															</p>
@@ -336,7 +352,7 @@ export default function TaskForm({
 															</p>
 														</div>
 														<div className="mt-2 pt-2 border-t border-white/10 text-[9px] text-gray-500 italic leading-relaxed">
-															e.g. "Read book ?study !today @3pm ~1.5h #quick"
+															e.g. "Read book ?study !today at3pm for1h30 #quick"
 														</div>
 													</motion.div>
 												)}
@@ -349,9 +365,65 @@ export default function TaskForm({
 										type="text"
 										value={name}
 										onChange={(e) => handleNameChange(e.target.value)}
-										placeholder='e.g. "Read book ?study !today @3pm ~1h #quick"'
+										placeholder='e.g. "Read book ?study !today at3pm for1h30 #quick"'
 										className="w-full text-[15px] font-semibold bg-transparent border-b-2 border-gray-100 dark:border-gray-800 pb-2 focus:border-blue-500 outline-none transition-colors text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-700"
 									/>
+									<AnimatePresence>
+										{name.trim() && hasParsedNameTokens && (
+											<motion.div
+												initial={{ opacity: 0, y: -4 }}
+												animate={{ opacity: 1, y: 0 }}
+												exit={{ opacity: 0, y: -4 }}
+												className={`mt-2 rounded-xl border px-3 py-2 ${
+													darkMode
+														? "bg-gray-900/70 border-gray-800"
+														: "bg-gray-50 border-gray-100"
+												}`}
+											>
+												<div className="flex items-center gap-2 min-w-0">
+													<Wand2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+													<span className="text-[10px] font-black uppercase tracking-widest text-gray-400 shrink-0">
+														Will create
+													</span>
+													<span className="text-xs font-bold truncate text-gray-700 dark:text-gray-200">
+														{parsedName.cleanName || name.trim()}
+													</span>
+												</div>
+												<div className="mt-2 flex flex-wrap gap-1.5">
+													{parsedCategory && (
+														<span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500 text-white font-bold uppercase tracking-wide">
+															{parsedCategory.name}
+														</span>
+													)}
+													{parsedName.relativeDate && (
+														<span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500 text-white font-bold uppercase tracking-wide">
+															{formatDueDate(formatDateToInput(parsedName.relativeDate))}
+														</span>
+													)}
+													{parsedName.startTimeStr && (
+														<span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold uppercase tracking-wide">
+															{parsedName.startTimeStr}
+														</span>
+													)}
+													{parsedName.durationMs && (
+														<span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500 text-white font-bold uppercase tracking-wide">
+															{formatDurationShort(parsedName.durationMs)}
+														</span>
+													)}
+													{parsedName.tag && (
+														<span className="text-[9px] px-2 py-0.5 rounded-full bg-orange-500 text-white font-bold uppercase tracking-wide">
+															{parsedName.tag}
+														</span>
+													)}
+													{parsedName.isRecurring && (
+														<span className="text-[9px] px-2 py-0.5 rounded-full bg-green-500 text-white font-bold uppercase tracking-wide">
+															{parsedName.recurringPattern || "recurring"}
+														</span>
+													)}
+												</div>
+											</motion.div>
+										)}
+									</AnimatePresence>
 								</div>
 
 								{/* Description */}

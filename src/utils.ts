@@ -28,6 +28,54 @@ export function generateId(): string {
 	return Math.random().toString(36).substring(2, 9);
 }
 
+function parseDurationMs(amountText: string, unitText?: string): number {
+	const amount = parseFloat(amountText);
+	const unit = unitText ? unitText.toLowerCase() : "m";
+
+	if (unit.startsWith("h")) {
+		return Math.round(amount * 60 * 60 * 1000);
+	}
+	return Math.round(amount * 60 * 1000);
+}
+
+function parseDurationToken(match: RegExpMatchArray): number | undefined {
+	const leadingAmount = match[1];
+	const leadingUnit = match[2]?.toLowerCase();
+	const trailingMinutes = match[3];
+
+	if (!leadingAmount) return undefined;
+
+	if (leadingUnit?.startsWith("h") && trailingMinutes) {
+		return (
+			parseDurationMs(leadingAmount, leadingUnit) +
+			parseDurationMs(trailingMinutes, "m")
+		);
+	}
+
+	return parseDurationMs(leadingAmount, leadingUnit);
+}
+
+function parseStartTimeToken(match: RegExpMatchArray): string | undefined {
+	let hours = parseInt(match[1]);
+	const minutesText = match[2] || match[4] || match[5];
+	const minutes = minutesText ? parseInt(minutesText) : 0;
+	const meridiem = (match[3] || match[6] || match[7])?.toLowerCase();
+
+	if (Number.isNaN(hours) || Number.isNaN(minutes)) return undefined;
+	if (hours > 23 || minutes > 59) return undefined;
+	if (meridiem && hours > 12) return undefined;
+
+	if (meridiem) {
+		if (meridiem === "pm" && hours !== 12) {
+			hours += 12;
+		} else if (meridiem === "am" && hours === 12) {
+			hours = 0;
+		}
+	}
+
+	return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+}
+
 export function formatDueDate(dateStr: string): string {
 	const dueDate = new Date(dateStr);
 	const now = new Date();
@@ -116,37 +164,28 @@ export function parseSmartInput(input: string): {
 		cleanName = cleanName.replace(/@(daily|day|weekly|week)/gi, "").trim();
 	}
 
-	// Extract start time (@14:00, @2pm, @9:30am, etc.) - only matches if not recurring pattern
-	const startAtMatch = cleanName.match(/@(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+	// Extract start time (@14:00, @2pm, at1pm30, at 2pm30, etc.)
+	const startAtPattern =
+		/(?:^|\s)(?:@|at\s*)(\d{1,2})(?:(?::(\d{2}))|(?:(am|pm)(\d{2})?)|(?:(\d{2})(am|pm)?))?\s*(am|pm)?(?=$|\s|[,.])/i;
+	const startAtMatch = cleanName.match(startAtPattern);
 	if (startAtMatch) {
-		let hours = parseInt(startAtMatch[1]);
-		const minutes = startAtMatch[2] ? parseInt(startAtMatch[2]) : 0;
-		const meridiem = startAtMatch[3]?.toLowerCase();
-
-		if (meridiem) {
-			if (meridiem === "pm" && hours !== 12) {
-				hours += 12;
-			} else if (meridiem === "am" && hours === 12) {
-				hours = 0;
-			}
+		const parsedTime = parseStartTimeToken(startAtMatch);
+		if (parsedTime) {
+			startTimeStr = parsedTime;
+			cleanName = cleanName.replace(startAtPattern, " ").trim();
 		}
-
-		startTimeStr = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
-		cleanName = cleanName.replace(/@\d{1,2}(?::\d{2})?\s*(am|pm)?/gi, "").trim();
 	}
 
-	// Extract duration (~45m, ~1.5h, ~2h30m, ~30, etc.)
-	const durationMatch = cleanName.match(/~(\d+(?:\.\d+)?)\s*(h|m|hr|min|hour|minute)?s?/i);
+	// Extract duration (~45m, ~1.5h, ~2h30m, for2h, for1h30, etc.)
+	const durationPattern =
+		/(?:^|\s)(?:~|for\s*)(\d+(?:\.\d+)?)\s*(h|hr|hour|m|min|minute)?s?(?:\s*(\d+)\s*(?:m|min|minute)?s?)?(?=$|\s|[,.])/i;
+	const durationMatch = cleanName.match(durationPattern);
 	if (durationMatch) {
-		const amount = parseFloat(durationMatch[1]);
-		const unit = durationMatch[2] ? durationMatch[2].toLowerCase() : "m";
-
-		if (unit.startsWith("h")) {
-			durationMs = Math.round(amount * 60 * 60 * 1000);
-		} else {
-			durationMs = Math.round(amount * 60 * 1000);
+		const parsedDuration = parseDurationToken(durationMatch);
+		if (parsedDuration) {
+			durationMs = parsedDuration;
+			cleanName = cleanName.replace(durationPattern, " ").trim();
 		}
-		cleanName = cleanName.replace(/~(\d+(?:\.\d+)?)\s*(h|m|hr|min|hour|minute)?s?/gi, "").trim();
 	}
 
 	// Extract time patterns (due dates)

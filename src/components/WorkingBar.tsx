@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
 	Play,
@@ -12,9 +12,21 @@ import {
 	Clock,
 	RotateCcw,
 	Wand2,
+	Trophy,
+	FileText,
+	ChevronUp,
+	ChevronDown,
+	Send,
 } from "lucide-react";
 import { Task, Category } from "../types";
-import { formatDuration, formatTimer, parseSmartInput } from "../utils";
+import {
+	formatDateToInput,
+	formatDueDate,
+	formatDuration,
+	formatDurationShort,
+	formatTimer,
+	parseSmartInput,
+} from "../utils";
 
 interface WorkingBarProps {
 	tasks: Task[];
@@ -28,6 +40,13 @@ interface WorkingBarProps {
 	onFinishTask: (id: string) => void;
 	onDeleteTask: (id: string) => void;
 	onReenterTask: (id: string) => void;
+	onAddSessionLog: (
+		content: string,
+		type: "SessionLog" | "Achievement",
+		taskId: string,
+		taskName: string,
+		categoryId: string,
+	) => void;
 	darkMode: boolean;
 }
 
@@ -43,12 +62,63 @@ export default function WorkingBar({
 	onFinishTask,
 	onDeleteTask,
 	onReenterTask,
+	onAddSessionLog,
 	darkMode,
 }: WorkingBarProps) {
 	const [input, setInput] = useState("");
 	const [isFocused, setIsFocused] = useState(false);
 	const [showTooltip, setShowTooltip] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
+	const parsedInput = useMemo(() => parseSmartInput(input), [input]);
+	const parsedCategory = parsedInput.categoryName
+		? categories.find(
+				(c) =>
+					c.name.toLowerCase() === parsedInput.categoryName?.toLowerCase(),
+			)
+		: undefined;
+	const hasParsedInputTokens =
+		!!parsedInput.categoryName ||
+		!!parsedInput.relativeDate ||
+		!!parsedInput.startTimeStr ||
+		!!parsedInput.durationMs ||
+		!!parsedInput.tag ||
+		!!parsedInput.isRecurring;
+
+	// Session log state
+	const [logInput, setLogInput] = useState("");
+	const [logType, setLogType] = useState<"SessionLog" | "Achievement">(
+		"SessionLog",
+	);
+	const [showSessionLog, setShowSessionLog] = useState(true);
+	const [showNiceFeedback, setShowNiceFeedback] = useState(false);
+	const niceFeedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+	const handleSubmitLog = () => {
+		if (!logInput.trim() || !activeTask) return;
+		onAddSessionLog(
+			logInput.trim(),
+			logType,
+			activeTask.id,
+			activeTask.name,
+			activeTask.categoryId,
+		);
+		setLogInput("");
+		// Show "Nice !!!" feedback
+		setShowNiceFeedback(true);
+		if (niceFeedbackTimeoutRef.current) {
+			clearTimeout(niceFeedbackTimeoutRef.current);
+		}
+		niceFeedbackTimeoutRef.current = setTimeout(() => {
+			setShowNiceFeedback(false);
+		}, 1800);
+	};
+
+	const handleLogKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === "Enter" && logInput.trim()) {
+			e.preventDefault();
+			handleSubmitLog();
+		}
+	};
 
 	const suggestions = tasks
 		.filter(
@@ -98,84 +168,246 @@ export default function WorkingBar({
 		<div ref={containerRef} className="relative flex-1 w-full">
 			<AnimatePresence mode="wait">
 				{activeTask ? (
-					<motion.div
-						key="active"
-						initial={{ opacity: 0, y: -10 }}
-						animate={{ opacity: 1, y: 0 }}
-						exit={{ opacity: 0, y: 10 }}
-						className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 sm:p-1.5 sm:pl-4 rounded-xl sm:rounded-xl border shadow-lg transition-all ${
-							darkMode
-								? "bg-blue-600 border-blue-500 text-white"
-								: "bg-blue-600 border-blue-500 text-white"
-						}`}
-					>
-						{/* Task Info + Timer (Stacked on mobile) */}
-						<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
-							<div className="flex-1 min-w-0">
-								<p className="text-[10px] font-black uppercase tracking-widest text-blue-200 mb-0.5">
-									Working on
-								</p>
-								<h3 className="text-sm font-bold truncate leading-tight">
-									{activeTask.name}
-								</h3>
-							</div>
-						</div>
-
-						{/* Action Buttons */}
-						<div className="flex items-center gap-1 bg-black/10 rounded-xl p-1 shrink-0 self-stretch sm:self-auto">
-							{/* Timer Display - inline with buttons */}
-							<div className="px-3 py-2 font-mono text-sm font-bold flex-shrink-0">
-								{formatTimer(activeTask.spentTime)}
+					<>
+						<motion.div
+							key="active"
+							initial={{ opacity: 0, y: -10 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={{ opacity: 0, y: 10 }}
+							className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 sm:p-1.5 sm:pl-4 rounded-xl sm:rounded-xl border shadow-lg transition-all ${
+								darkMode
+									? "bg-blue-600 border-blue-500 text-white"
+									: "bg-blue-600 border-blue-500 text-white"
+							}`}
+						>
+							{/* Task Info + Timer (Stacked on mobile) */}
+							<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
+								<div className="flex-1 min-w-0">
+									<p className="text-[10px] font-black uppercase tracking-widest text-blue-200 mb-0.5">
+										Working on
+									</p>
+									<h3 className="text-sm font-bold truncate leading-tight">
+										{activeTask.name}
+									</h3>
+								</div>
 							</div>
 
-							<div className="w-px h-4 bg-white/10" />
-							<button
-								onClick={onToggleTimer}
-								className="flex-1 sm:flex-none p-2 hover:bg-white/10 rounded-lg transition-colors"
-								title={timerActive ? "Pause" : "Continue"}
-							>
-								{timerActive ? (
-									<Pause className="w-4 h-4 fill-current mx-auto" />
-								) : (
-									<Play className="w-4 h-4 fill-current mx-auto" />
-								)}
-							</button>
+							{/* Action Buttons */}
+							<div className="flex items-center gap-1 bg-black/10 rounded-xl p-1 shrink-0 self-stretch sm:self-auto">
+								{/* Timer Display - inline with buttons */}
+								<div className="px-3 py-2 font-mono text-sm font-bold flex-shrink-0">
+									{formatTimer(activeTask.spentTime)}
+								</div>
 
-							<button
-								onClick={() => onFinishTask(activeTask.id)}
-								className="flex-1 sm:flex-none p-2 hover:bg-white/10 rounded-lg transition-colors text-blue-200 hover:text-white"
-								title="Finish Task"
-							>
-								<CheckCircle2 className="w-4 h-4 mx-auto" />
-							</button>
+								<div className="w-px h-4 bg-white/10" />
+								<button
+									onClick={onToggleTimer}
+									className="flex-1 sm:flex-none p-2 hover:bg-white/10 rounded-lg transition-colors"
+									title={timerActive ? "Pause" : "Continue"}
+								>
+									{timerActive ? (
+										<Pause className="w-4 h-4 fill-current mx-auto" />
+									) : (
+										<Play className="w-4 h-4 fill-current mx-auto" />
+									)}
+								</button>
 
-							<button
-								onClick={() => onReenterTask(activeTask.id)}
-								className="flex-1 sm:flex-none p-2 hover:bg-white/10 rounded-lg transition-colors text-blue-200 hover:text-white"
-								title="Finish and Re-enter"
-							>
-								<RotateCcw className="w-4 h-4 mx-auto" />
-							</button>
+								<button
+									onClick={() => onFinishTask(activeTask.id)}
+									className="flex-1 sm:flex-none p-2 hover:bg-white/10 rounded-lg transition-colors text-blue-200 hover:text-white"
+									title="Finish Task"
+								>
+									<CheckCircle2 className="w-4 h-4 mx-auto" />
+								</button>
 
-							<div className="w-px h-4 bg-white/10 mx-0.5" />
+								<button
+									onClick={() => onReenterTask(activeTask.id)}
+									className="flex-1 sm:flex-none p-2 hover:bg-white/10 rounded-lg transition-colors text-blue-200 hover:text-white"
+									title="Finish and Re-enter"
+								>
+									<RotateCcw className="w-4 h-4 mx-auto" />
+								</button>
 
-							<button
-								onClick={onStopTimer}
-								className="flex-1 sm:flex-none p-2 hover:bg-white/10 rounded-lg transition-colors text-blue-200 hover:text-white"
-								title="Stop Tracking"
-							>
-								<Square className="w-4 h-4 fill-current mx-auto" />
-							</button>
+								<div className="w-px h-4 bg-white/10 mx-0.5" />
 
-							<button
-								onClick={() => onDeleteTask(activeTask.id)}
-								className="flex-1 sm:flex-none p-2 hover:bg-red-500/20 rounded-lg transition-colors text-red-200 hover:text-red-100"
-								title="Delete Task"
+								<button
+									onClick={onStopTimer}
+									className="flex-1 sm:flex-none p-2 hover:bg-white/10 rounded-lg transition-colors text-blue-200 hover:text-white"
+									title="Stop Tracking"
+								>
+									<Square className="w-4 h-4 fill-current mx-auto" />
+								</button>
+
+								<button
+									onClick={() => onDeleteTask(activeTask.id)}
+									className="flex-1 sm:flex-none p-2 hover:bg-red-500/20 rounded-lg transition-colors text-red-200 hover:text-red-100"
+									title="Delete Task"
+								>
+									<Trash2 className="w-4 h-4 mx-auto" />
+								</button>
+							</div>
+						</motion.div>
+
+						{/* Session Log Input */}
+						<AnimatePresence>
+							{showSessionLog && (
+								<motion.div
+									initial={{ opacity: 0, height: 0 }}
+									animate={{ opacity: 1, height: "auto" }}
+									exit={{ opacity: 0, height: 0 }}
+									transition={{ duration: 0.2, ease: "easeInOut" }}
+									className="overflow-hidden"
+								>
+									<div
+										className={`mt-2 p-2 rounded-xl border transition-all ${
+											darkMode
+												? "bg-gray-900 border-gray-800"
+												: "bg-white border-gray-100 shadow-sm"
+										}`}
+									>
+										{/* Type Toggle Pills */}
+										<div className="flex items-center gap-1 mb-2">
+											<div
+												className={`flex gap-0.5 p-0.5 rounded-lg ${darkMode ? "bg-gray-800" : "bg-gray-100"}`}
+											>
+												<button
+													type="button"
+													onClick={() => setLogType("SessionLog")}
+													className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${
+														logType === "SessionLog"
+															? "bg-blue-500 text-white shadow-sm"
+															: darkMode
+																? "text-gray-400 hover:text-gray-300"
+																: "text-gray-500 hover:text-gray-700"
+													}`}
+												>
+													<FileText className="w-3 h-3" />
+													Log
+												</button>
+												<button
+													type="button"
+													onClick={() => setLogType("Achievement")}
+													className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${
+														logType === "Achievement"
+															? "bg-amber-500 text-white shadow-sm"
+															: darkMode
+																? "text-gray-400 hover:text-gray-300"
+																: "text-gray-500 hover:text-gray-700"
+													}`}
+												>
+													<Trophy className="w-3 h-3" />
+													Achievement
+												</button>
+											</div>
+
+											<div className="flex-1" />
+
+											{/* "Nice !!!" Feedback */}
+											<AnimatePresence>
+												{showNiceFeedback && (
+													<motion.span
+														initial={{ opacity: 0, x: 10 }}
+														animate={{ opacity: 1, x: 0 }}
+														exit={{ opacity: 0, x: -5 }}
+														transition={{ duration: 0.3 }}
+														className={`text-[11px] font-black tracking-wide ${
+															logType === "Achievement"
+																? "text-amber-500"
+																: "text-blue-500"
+														} mr-1`}
+													>
+														Nice !!!
+													</motion.span>
+												)}
+											</AnimatePresence>
+
+											{/* Collapse toggle */}
+											<button
+												type="button"
+												onClick={() => setShowSessionLog(false)}
+												className={`p-1 rounded-md transition-colors ${
+													darkMode
+														? "text-gray-500 hover:text-gray-300 hover:bg-gray-800"
+														: "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+												}`}
+												title="Collapse session log"
+											>
+												<ChevronUp className="w-3.5 h-3.5" />
+											</button>
+										</div>
+
+										{/* Input Row */}
+										<div className="flex items-center gap-2">
+											<div
+												className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+													logType === "Achievement"
+														? "bg-amber-500/10 text-amber-500"
+														: "bg-blue-500/10 text-blue-500"
+												}`}
+											>
+												{logType === "Achievement" ? (
+													<Trophy className="w-3.5 h-3.5" />
+												) : (
+													<FileText className="w-3.5 h-3.5" />
+												)}
+											</div>
+											<input
+												type="text"
+												value={logInput}
+												onChange={(e) => setLogInput(e.target.value)}
+												onKeyDown={handleLogKeyDown}
+												placeholder={
+													logType === "Achievement"
+														? "What did you just achieve?"
+														: "Jot down what you did..."
+												}
+												className={`flex-1 bg-transparent px-2 py-1.5 text-sm font-medium outline-none border-none ${
+													darkMode
+														? "placeholder-gray-600 text-gray-200"
+														: "placeholder-gray-400 text-gray-800"
+												}`}
+											/>
+											<button
+												type="button"
+												onClick={handleSubmitLog}
+												disabled={!logInput.trim()}
+												className={`p-1.5 rounded-lg transition-all ${
+													logInput.trim()
+														? logType === "Achievement"
+															? "bg-amber-500 text-white hover:bg-amber-600 shadow-sm"
+															: "bg-blue-500 text-white hover:bg-blue-600 shadow-sm"
+														: darkMode
+															? "bg-gray-800 text-gray-600 cursor-not-allowed"
+															: "bg-gray-100 text-gray-300 cursor-not-allowed"
+												}`}
+												title="Log entry"
+											>
+												<Send className="w-3.5 h-3.5" />
+											</button>
+										</div>
+									</div>
+								</motion.div>
+							)}
+						</AnimatePresence>
+
+						{/* Collapsed state - show expand button */}
+						{!showSessionLog && (
+							<motion.button
+								initial={{ opacity: 0 }}
+								animate={{ opacity: 1 }}
+								type="button"
+								onClick={() => setShowSessionLog(true)}
+								className={`mt-1.5 w-full flex items-center justify-center gap-1.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+									darkMode
+										? "text-gray-500 hover:text-gray-400 hover:bg-gray-900"
+										: "text-gray-400 hover:text-gray-500 hover:bg-gray-50"
+								}`}
 							>
-								<Trash2 className="w-4 h-4 mx-auto" />
-							</button>
-						</div>
-					</motion.div>
+								<ChevronDown className="w-3 h-3" />
+								Session Log
+							</motion.button>
+						)}
+					</>
 				) : (
 					<motion.div
 						key="input"
@@ -264,23 +496,23 @@ export default function WorkingBar({
 														</code>
 													</p>
 													<p>
-														<b className="text-white">@Start Time:</b> Use{" "}
+														<b className="text-white">Start Time:</b> Use{" "}
 														<code className="bg-black/25 px-1 py-0.5 rounded text-green-300 font-mono">
-															@2pm
+															at2pm
 														</code>{" "}
 														or{" "}
 														<code className="bg-black/25 px-1 py-0.5 rounded text-green-300 font-mono">
-															@14:30
+															at1pm30
 														</code>
 													</p>
 													<p>
-														<b className="text-white">~Duration:</b> Use{" "}
+														<b className="text-white">Duration:</b> Use{" "}
 														<code className="bg-black/25 px-1 py-0.5 rounded text-orange-300 font-mono">
-															~30m
+															for30m
 														</code>
 														,{" "}
 														<code className="bg-black/25 px-1 py-0.5 rounded text-orange-300 font-mono">
-															~1.5h
+															for1h30
 														</code>
 													</p>
 													<p>
@@ -303,7 +535,7 @@ export default function WorkingBar({
 													</p>
 												</div>
 												<div className="pt-1.5 border-t border-white/10 text-[9px] text-gray-400 italic">
-													Example: Code review ?work !today @3pm ~1h #quick
+													Example: Code review ?work !today at3pm for1h30 #quick
 												</div>
 											</motion.div>
 										)}
@@ -315,6 +547,58 @@ export default function WorkingBar({
 									</div>
 								</div>
 							</div>
+
+							<AnimatePresence>
+								{input.trim() && hasParsedInputTokens && (
+									<motion.div
+										initial={{ opacity: 0, y: -4 }}
+										animate={{ opacity: 1, y: 0 }}
+										exit={{ opacity: 0, y: -4 }}
+										className="mt-1.5 flex flex-wrap items-center gap-1.5 px-2"
+									>
+										<span
+											className={`flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wide ${
+												darkMode
+													? "bg-blue-500/15 text-blue-300"
+													: "bg-blue-50 text-blue-500"
+											}`}
+										>
+											<Wand2 className="w-2.5 h-2.5" />
+											Parsed
+										</span>
+										{parsedCategory && (
+											<span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500 text-white font-bold uppercase tracking-wide">
+												{parsedCategory.name}
+											</span>
+										)}
+										{parsedInput.relativeDate && (
+											<span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500 text-white font-bold uppercase tracking-wide">
+												{formatDueDate(formatDateToInput(parsedInput.relativeDate))}
+											</span>
+										)}
+										{parsedInput.startTimeStr && (
+											<span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold uppercase tracking-wide">
+												{parsedInput.startTimeStr}
+											</span>
+										)}
+										{parsedInput.durationMs && (
+											<span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500 text-white font-bold uppercase tracking-wide">
+												{formatDurationShort(parsedInput.durationMs)}
+											</span>
+										)}
+										{parsedInput.tag && (
+											<span className="text-[9px] px-2 py-0.5 rounded-full bg-orange-500 text-white font-bold uppercase tracking-wide">
+												{parsedInput.tag}
+											</span>
+										)}
+										{parsedInput.isRecurring && (
+											<span className="text-[9px] px-2 py-0.5 rounded-full bg-green-500 text-white font-bold uppercase tracking-wide">
+												{parsedInput.recurringPattern || "recurring"}
+											</span>
+										)}
+									</motion.div>
+								)}
+							</AnimatePresence>
 
 							{/* Suggestions Dropdown */}
 							<AnimatePresence>

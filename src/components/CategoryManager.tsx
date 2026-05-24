@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { motion, AnimatePresence, Reorder } from "motion/react";
+import {
+	motion,
+	AnimatePresence,
+	Reorder,
+	useDragControls,
+	type DragControls,
+} from "motion/react";
 import {
 	X,
 	Plus,
@@ -36,6 +42,33 @@ const COLORS = [
 	"#6366f1",
 	"#14b8a6",
 ];
+
+function DraggableCategoryItem({
+	category,
+	children,
+}: {
+	category: Category;
+	children: (dragControls: DragControls) => React.ReactNode;
+}) {
+	const dragControls = useDragControls();
+
+	return (
+		<Reorder.Item
+			key={category.id}
+			value={category}
+			dragListener={false}
+			dragControls={dragControls}
+			className="relative"
+			whileDrag={{
+				scale: 1.02,
+				zIndex: 100,
+				boxShadow: "0 18px 40px rgba(15, 23, 42, 0.18)",
+			}}
+		>
+			{children(dragControls)}
+		</Reorder.Item>
+	);
+}
 
 export default function CategoryManager({
 	isOpen,
@@ -179,12 +212,13 @@ export default function CategoryManager({
 								axis="y"
 								values={categories}
 								onReorder={handleReorder}
-								className="space-y-3"
+								className="space-y-2"
 							>
 								{categories.map((cat) => (
-									<Reorder.Item key={cat.id} value={cat} dragListener={false}>
+									<DraggableCategoryItem key={cat.id} category={cat}>
+										{(dragControls) => (
 										<div
-											className={`p-4 rounded-3xl border ${darkMode ? "border-gray-800 bg-gray-800/50" : "border-gray-100 bg-gray-50"} ${cat.isHidden ? "opacity-50" : ""}`}
+											className={`px-3 py-2.5 rounded-2xl border ${darkMode ? "border-gray-800 bg-gray-800/50" : "border-gray-100 bg-gray-50"} ${cat.isHidden ? "opacity-50" : ""}`}
 										>
 											{editingId === cat.id ? (
 												<div className="space-y-4">
@@ -234,26 +268,27 @@ export default function CategoryManager({
 													</button>
 												</div>
 											) : (
-												<div className="flex items-center gap-3">
+												<div className="flex items-center gap-2.5">
 													{/* Drag Handle */}
-													<Reorder.Item
-														value={cat}
-														as="div"
-														className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-700 hover:text-gray-400 transition-colors"
+													<button
+														type="button"
+														onPointerDown={(e) => dragControls.start(e)}
+														className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-700 hover:text-gray-400 transition-colors p-1 -ml-1 shrink-0"
+														title="Reorder category"
 													>
-														<GripVertical className="w-5 h-5" />
-													</Reorder.Item>
+														<GripVertical className="w-4 h-4" />
+													</button>
 
 													{/* Icon - Clickable to edit */}
 													<button
 														onClick={() => setEditingId(cat.id)}
-														className="p-3 rounded-2xl shrink-0 hover:opacity-80 transition-opacity"
+														className="p-2 rounded-xl shrink-0 hover:opacity-80 transition-opacity"
 														style={{ backgroundColor: `${cat.color}20` }}
 														title="Edit icon and color"
 													>
 														<CategoryIcon
 															name={cat.iconName}
-															className="w-5 h-5"
+															className="w-4 h-4"
 															style={{ color: cat.color }}
 														/>
 													</button>
@@ -292,19 +327,19 @@ export default function CategoryManager({
 														onClick={() =>
 															handleUpdate(cat.id, { isHidden: !cat.isHidden })
 														}
-														className={`p-2 transition-colors shrink-0 ${!cat.isHidden ? (darkMode ? "text-blue-400" : "text-blue-500") : "text-gray-400"}`}
+														className={`p-1.5 transition-colors shrink-0 ${!cat.isHidden ? (darkMode ? "text-blue-400" : "text-blue-500") : "text-gray-400"}`}
 														disabled={cat.isDefault}
 														title={cat.isHidden ? "Unhide" : "Hide"}
 													>
 														{cat.isHidden ? (
-															<EyeOff className="w-5 h-5" />
+															<EyeOff className="w-4 h-4" />
 														) : (
-															<Eye className="w-5 h-5" />
+															<Eye className="w-4 h-4" />
 														)}
 													</button>
 													<button
 														onClick={() => handleSetDefault(cat.id)}
-														className={`p-2 transition-colors shrink-0 ${cat.isDefault ? "text-yellow-500" : "text-gray-400 hover:text-yellow-500"}`}
+														className={`p-1.5 transition-colors shrink-0 ${cat.isDefault ? "text-yellow-500" : "text-gray-400 hover:text-yellow-500"}`}
 														title="Set as default"
 													>
 														<Star
@@ -313,7 +348,7 @@ export default function CategoryManager({
 													</button>
 													<button
 														onClick={() => handleDelete(cat.id)}
-														className="p-2 text-gray-400 hover:text-red-500 shrink-0"
+														className="p-1.5 text-gray-400 hover:text-red-500 shrink-0"
 														title="Delete category"
 													>
 														<Trash2 className="w-4 h-4" />
@@ -321,7 +356,8 @@ export default function CategoryManager({
 												</div>
 											)}
 										</div>
-									</Reorder.Item>
+										)}
+									</DraggableCategoryItem>
 								))}
 							</Reorder.Group>
 						</div>
