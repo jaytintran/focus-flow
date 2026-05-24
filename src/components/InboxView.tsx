@@ -125,22 +125,22 @@ export default function InboxView({
 					<div
 						className={`px-3 py-2 border-b ${darkMode ? "border-gray-800/80 bg-gray-950/40" : "border-gray-100 bg-gray-50/50"}`}
 					>
-						<form onSubmit={handleQuickAdd} className="flex gap-2">
+						<form onSubmit={handleQuickAdd} className="flex items-center gap-2">
 							<input
 								type="text"
 								value={quickAddValue}
 								onChange={(e) => setQuickAddValue(e.target.value)}
 								placeholder="Quick capture... !today @3pm ~1h #quick"
-								className={`flex-1 ${darkMode ? "bg-gray-900 border-gray-800 text-white placeholder-gray-600" : "bg-white border-gray-200 text-gray-900 placeholder-gray-400"} border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all`}
+								className={`flex-1 ${darkMode ? "bg-gray-900 border-gray-800 text-white placeholder-gray-600" : "bg-white border-gray-100 text-gray-900 placeholder-gray-400"} border rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all`}
 							/>
 							<button
 								type="submit"
-								className="w-9 h-9 flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors shrink-0"
+								className="w-9 h-9 flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors shrink-0 shadow-sm"
 							>
 								<Plus className="w-4 h-4" />
 							</button>
 							<div
-								className={`flex items-center gap-1.5 px-2.5 rounded-xl text-[10px] font-black uppercase text-purple-500 shrink-0 ${darkMode ? "bg-purple-500/10" : "bg-purple-50"}`}
+								className={`h-9 flex items-center gap-1.5 px-2.5 rounded-xl text-[10px] font-black uppercase text-purple-500 shrink-0 ${darkMode ? "bg-purple-500/10" : "bg-purple-50"}`}
 							>
 								<InboxIcon className="w-3 h-3" />
 								{inboxTasks.length}
@@ -149,8 +149,8 @@ export default function InboxView({
 					</div>
 
 					{/* Task List */}
-					<div className="flex-1 overflow-y-auto px-6 py-8 no-scrollbar">
-						<div className="max-w-2xl mx-auto space-y-3">
+					<div className="flex-1 overflow-y-auto px-3 py-4 no-scrollbar">
+						<div className="space-y-3">
 							{inboxTasks.length === 0 ? (
 								<div className="flex flex-col items-center justify-center py-12 text-gray-400">
 									<div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
