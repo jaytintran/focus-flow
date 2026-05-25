@@ -42,4 +42,6 @@ export interface JournalEntry {
 	categoryId?: string;
 	linkedTaskId?: string;
 	linkedTaskName?: string;
+	linkedTaskIds?: string[];
+	linkedTaskNames?: string[];
 }

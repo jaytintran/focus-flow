@@ -15,7 +15,9 @@ interface ReorderableTaskRowProps {
 	onReenter?: (id: string) => void;
 }
 
-export const ReorderableTaskRow: React.FC<ReorderableTaskRowProps> = (props) => {
+export const ReorderableTaskRow: React.FC<ReorderableTaskRowProps> = (
+	props,
+) => {
 	const dragControls = useDragControls();
 
 	return (
@@ -28,10 +30,7 @@ export const ReorderableTaskRow: React.FC<ReorderableTaskRowProps> = (props) => 
 			exit={{ opacity: 0, scale: 0.95 }}
 			className="select-none"
 		>
-			<TaskRow
-				{...props}
-				onDragStart={(e) => dragControls.start(e)}
-			/>
+			<TaskRow {...props} onDragStart={(e) => dragControls.start(e)} />
 		</Reorder.Item>
 	);
 };

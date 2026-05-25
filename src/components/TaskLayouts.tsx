@@ -19,6 +19,7 @@ interface TaskTableProps {
 	tasks: Task[];
 	categories: Category[];
 	activeTaskId: string | null;
+	activeTaskIds?: string[];
 	timerActive: boolean;
 	onTogglePlay: (id: string) => void;
 	onDelete: (id: string) => void;
@@ -32,6 +33,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 	tasks,
 	categories,
 	activeTaskId,
+	activeTaskIds = activeTaskId ? [activeTaskId] : [],
 	timerActive,
 	onTogglePlay,
 	onDelete,
@@ -78,7 +80,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 						const tagInfo = TAGS.find(
 							(t) => t.label === task.tag,
 						);
-						const isActive = activeTaskId === task.id && timerActive;
+						const isActive = activeTaskIds.includes(task.id) && timerActive;
 
 						return (
 							<tr
@@ -193,6 +195,7 @@ interface TaskGalleryProps {
 	tasks: Task[];
 	categories: Category[];
 	activeTaskId: string | null;
+	activeTaskIds?: string[];
 	timerActive: boolean;
 	onTogglePlay: (id: string) => void;
 	onDelete: (id: string) => void;
@@ -206,6 +209,7 @@ export const TaskGallery: React.FC<TaskGalleryProps> = ({
 	tasks,
 	categories,
 	activeTaskId,
+	activeTaskIds = activeTaskId ? [activeTaskId] : [],
 	timerActive,
 	onTogglePlay,
 	onDelete,
@@ -219,7 +223,7 @@ export const TaskGallery: React.FC<TaskGalleryProps> = ({
 			{tasks.map((task) => {
 				const category = categories.find((c) => c.id === task.categoryId);
 				const priorityInfo = PRIORITIES.find((p) => p.label === task.priority);
-				const isActive = activeTaskId === task.id && timerActive;
+				const isActive = activeTaskIds.includes(task.id) && timerActive;
 
 				return (
 					<motion.div

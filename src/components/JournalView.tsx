@@ -97,6 +97,8 @@ export default function JournalView({
 				categoryId: t.categoryId,
 				linkedTaskId: undefined as string | undefined,
 				linkedTaskName: undefined as string | undefined,
+				linkedTaskIds: undefined as string[] | undefined,
+				linkedTaskNames: undefined as string[] | undefined,
 				originalId: t.id,
 				isCompletedTask: true,
 				isScheduledActiveTask: false,
@@ -121,6 +123,8 @@ export default function JournalView({
 					categoryId: t.categoryId,
 					linkedTaskId: undefined as string | undefined,
 					linkedTaskName: undefined as string | undefined,
+					linkedTaskIds: undefined as string[] | undefined,
+					linkedTaskNames: undefined as string[] | undefined,
 					originalId: t.id,
 					isCompletedTask: false,
 					isScheduledActiveTask: true,
@@ -136,6 +140,8 @@ export default function JournalView({
 			categoryId: e.categoryId,
 			linkedTaskId: e.linkedTaskId,
 			linkedTaskName: e.linkedTaskName,
+			linkedTaskIds: e.linkedTaskIds,
+			linkedTaskNames: e.linkedTaskNames,
 			originalId: e.id,
 			isCompletedTask: false,
 			isScheduledActiveTask: false,
@@ -397,6 +403,12 @@ export default function JournalView({
 	};
 	const getTypeLabel = (entryType: JournalType) =>
 		entryType === "SessionLog" ? "Log" : entryType;
+	const getLinkedTaskNames = (item: (typeof combinedItems)[0]) =>
+		item.linkedTaskNames && item.linkedTaskNames.length > 0
+			? item.linkedTaskNames
+			: item.linkedTaskName
+				? [item.linkedTaskName]
+				: [];
 
 	return (
 		<motion.div
@@ -654,12 +666,38 @@ export default function JournalView({
 											: item.type === "Task"
 												? "#10B981"
 												: "#F97316";
+										const linkedTaskNames = getLinkedTaskNames(item);
+										const taskTagInfo = item.task?.tag
+											? TAGS.find((t) => t.label === item.task?.tag)
+											: undefined;
+										const miniTimeLabel =
+											item.task?.startAt && item.task?.endAt
+												? `${new Date(item.task.startAt).toLocaleTimeString(
+														[],
+														{
+															hour: "numeric",
+															minute: "2-digit",
+														},
+													)} -> ${new Date(item.task.endAt).toLocaleTimeString(
+														[],
+														{
+															hour: "numeric",
+															minute: "2-digit",
+														},
+													)}`
+												: item.isScheduledActiveTask
+													? formatScheduledTime(
+															item.task?.startAt || item.timestamp,
+															item.task?.endAt,
+															item.task?.duration,
+														)
+													: new Date(item.timestamp).toLocaleTimeString([], {
+															hour: "2-digit",
+															minute: "2-digit",
+														});
 
 										return (
-											<div
-												key={item.id}
-												className={`relative group ${viewMode === "mini" ? "overflow-visible" : ""}`}
-											>
+											<div key={item.id} className="relative group">
 												<div
 													className="absolute -left-[2.35rem] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-4 border-white dark:border-gray-950 z-10 transition-all duration-300 group-hover:scale-125"
 													style={{
@@ -667,6 +705,61 @@ export default function JournalView({
 														boxShadow: `0 0 8px ${dotColor}40`,
 													}}
 												/>
+
+												{viewMode === "mini" && (
+													<div className="mb-1 flex flex-col items-end gap-0.5 pr-2">
+														<div className="flex max-w-full flex-row-reverse items-center gap-1 overflow-hidden whitespace-nowrap">
+															<div
+																className={`flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[8px] ${
+																	item.isScheduledActiveTask
+																		? "border-blue-500 bg-blue-600 text-white font-mono"
+																		: "border-gray-500 bg-gray-600 text-white font-mono"
+																}`}
+															>
+																<Clock className="h-2 w-2" />
+																{miniTimeLabel}
+															</div>
+															{item.task?.dueDate && (
+																<div className="flex shrink-0 items-center gap-1 rounded-md border border-gray-500 bg-gray-600 px-1.5 py-0.5 text-[8px] text-white">
+																	<CalendarIcon className="h-2 w-2" />
+																	{formatScheduledDate(item.task.dueDate)}
+																</div>
+															)}
+															<span
+																className={`shrink-0 rounded-md px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider ${getTypeChipClass(item.type)}`}
+															>
+																{getTypeLabel(item.type)}
+															</span>
+															{category && (
+																<div
+																	className="flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[8px] uppercase text-white"
+																	style={{
+																		backgroundColor: category.color,
+																		borderColor: category.color,
+																	}}
+																>
+																	<CategoryIcon
+																		name={category.iconName}
+																		className="h-2 w-2"
+																	/>
+																	{category.name}
+																</div>
+															)}
+															{taskTagInfo && (
+																<span
+																	className="shrink-0 rounded-md border px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider text-white"
+																	style={{
+																		backgroundColor: taskTagInfo.color,
+																		borderColor: taskTagInfo.color,
+																	}}
+																>
+																	{item.task?.tag}
+																</span>
+															)}
+															↓
+														</div>
+													</div>
+												)}
 
 												<div
 													className={`${viewMode === "mini" ? "p-2 rounded-xl" : "p-4 rounded-2xl"} border transition-all duration-300 hover:translate-x-1 ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-50 shadow-sm"}`}
@@ -676,7 +769,7 @@ export default function JournalView({
 															// MINI MODE - Compact layout
 															<>
 																{/* Floating chips on top-right border */}
-																<div className="absolute -top-2 right-0 z-30 flex flex-row-reverse flex-wrap items-start gap-1 justify-end max-w-full pl-8">
+																<div className="hidden">
 																	{/* SCHEDULED TIME CHIP */}
 																	<div className="flex items-center gap-1 bg-blue-600/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-md border border-blue-500 shadow-sm text-[8px] font-mono">
 																		<Clock className="w-2 h-2" />
@@ -930,7 +1023,7 @@ export default function JournalView({
 																// MINI MODE
 																<>
 																	{/* Floating chips on top-right border */}
-																	<div className="absolute -top-2 right-0 z-30 flex flex-row-reverse flex-wrap items-start gap-1 justify-end max-w-full pl-8">
+																	<div className="hidden">
 																		{/* TIME CHIP */}
 																		<div className="flex items-center gap-1 bg-gray-600/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-md border border-gray-500 shadow-sm text-[8px] font-mono">
 																			<Clock className="w-2 h-2" />
@@ -1046,11 +1139,14 @@ export default function JournalView({
 																			</div>
 																		)}
 																	</div>
-																	{item.linkedTaskName && (
+																	{linkedTaskNames.length > 0 && (
 																		<div className="mt-1.5 flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-blue-500">
 																			<Link className="w-3 h-3" />
 																			<span className="truncate">
-																				While On: {item.linkedTaskName}
+																				While On: {linkedTaskNames[0]}
+																				{linkedTaskNames.length > 1
+																					? ` +${linkedTaskNames.length - 1}`
+																					: ""}
 																			</span>
 																		</div>
 																	)}
@@ -1128,18 +1224,36 @@ export default function JournalView({
 																	>
 																		{item.content}
 																	</p>
-																	{item.linkedTaskName && (
+																	{linkedTaskNames.length > 0 && (
 																		<div
-																			className={`mt-2 inline-flex max-w-full items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+																			className={`mt-2 flex max-w-full flex-wrap items-center gap-1.5 text-[10px] font-black uppercase tracking-wider ${
 																				darkMode
-																					? "bg-blue-500/10 text-blue-300"
-																					: "bg-blue-50 text-blue-600"
+																					? "text-blue-300"
+																					: "text-blue-600"
 																			}`}
 																		>
-																			<Link className="w-3 h-3 shrink-0" />
-																			<span className="truncate">
-																				While On: {item.linkedTaskName}
+																			<span
+																				className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg ${
+																					darkMode
+																						? "bg-blue-500/10"
+																						: "bg-blue-50"
+																				}`}
+																			>
+																				<Link className="w-3 h-3 shrink-0" />
+																				While On
 																			</span>
+																			{linkedTaskNames.map((name) => (
+																				<span
+																					key={name}
+																					className={`max-w-[180px] truncate px-2 py-1 rounded-lg ${
+																						darkMode
+																							? "bg-gray-800 text-blue-200"
+																							: "bg-blue-50 text-blue-600"
+																					}`}
+																				>
+																					{name}
+																				</span>
+																			))}
 																		</div>
 																	)}
 																	{item.categoryId &&

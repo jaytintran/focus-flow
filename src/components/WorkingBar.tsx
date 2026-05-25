@@ -17,6 +17,7 @@ import {
 	ChevronUp,
 	ChevronDown,
 	Send,
+	Layers,
 } from "lucide-react";
 import { Task, Category } from "../types";
 import {
@@ -32,8 +33,11 @@ interface WorkingBarProps {
 	tasks: Task[];
 	categories: Category[];
 	activeTask: Task | null;
+	activeSessionTasks: Task[];
 	timerActive: boolean;
 	onSelectTask: (id: string) => void;
+	onAddTaskToSession: (id: string) => void;
+	onRemoveTaskFromSession: (id: string) => void;
 	onAddTask: (name: string, categoryId: string) => void;
 	onToggleTimer: () => void;
 	onStopTimer: () => void;
@@ -43,9 +47,6 @@ interface WorkingBarProps {
 	onAddSessionLog: (
 		content: string,
 		type: "SessionLog" | "Achievement",
-		taskId: string,
-		taskName: string,
-		categoryId: string,
 	) => void;
 	darkMode: boolean;
 }
@@ -54,8 +55,11 @@ export default function WorkingBar({
 	tasks,
 	categories,
 	activeTask,
+	activeSessionTasks,
 	timerActive,
 	onSelectTask,
+	onAddTaskToSession,
+	onRemoveTaskFromSession,
 	onAddTask,
 	onToggleTimer,
 	onStopTimer,
@@ -68,6 +72,8 @@ export default function WorkingBar({
 	const [input, setInput] = useState("");
 	const [isFocused, setIsFocused] = useState(false);
 	const [showTooltip, setShowTooltip] = useState(false);
+	const [showSessionTaskPicker, setShowSessionTaskPicker] = useState(false);
+	const [sessionTaskQuery, setSessionTaskQuery] = useState("");
 	const containerRef = useRef<HTMLDivElement>(null);
 	const parsedInput = useMemo(() => parseSmartInput(input), [input]);
 	const parsedCategory = parsedInput.categoryName
@@ -98,9 +104,6 @@ export default function WorkingBar({
 		onAddSessionLog(
 			logInput.trim(),
 			logType,
-			activeTask.id,
-			activeTask.name,
-			activeTask.categoryId,
 		);
 		setLogInput("");
 		// Show "Nice !!!" feedback
@@ -125,6 +128,21 @@ export default function WorkingBar({
 			(t) => !t.completed && t.name.toLowerCase().includes(input.toLowerCase()),
 		)
 		.slice(0, 5);
+	const workingTasks =
+		activeSessionTasks.length > 0
+			? activeSessionTasks
+			: activeTask
+				? [activeTask]
+				: [];
+	const sessionTaskIds = new Set(workingTasks.map((task) => task.id));
+	const sessionTaskSuggestions = tasks
+		.filter(
+			(t) =>
+				!t.completed &&
+				!sessionTaskIds.has(t.id) &&
+				t.name.toLowerCase().includes(sessionTaskQuery.toLowerCase()),
+		)
+		.slice(0, 5);
 
 	const handleClickOutside = (e: MouseEvent) => {
 		if (
@@ -132,6 +150,7 @@ export default function WorkingBar({
 			!containerRef.current.contains(e.target as Node)
 		) {
 			setIsFocused(false);
+			setShowSessionTaskPicker(false);
 		}
 	};
 
@@ -184,11 +203,33 @@ export default function WorkingBar({
 							<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
 								<div className="flex-1 min-w-0">
 									<p className="text-[10px] font-black uppercase tracking-widest text-blue-200 mb-0.5">
-										Working on
+										{workingTasks.length > 1 ? "Working set" : "Working on"}
 									</p>
 									<h3 className="text-sm font-bold truncate leading-tight">
-										{activeTask.name}
+										{workingTasks.length > 1
+											? `${workingTasks.length} tasks together`
+											: activeTask.name}
 									</h3>
+									{workingTasks.length > 1 && (
+										<div className="mt-1 flex flex-wrap gap-1">
+											{workingTasks.map((task) => (
+												<span
+													key={task.id}
+													className="inline-flex max-w-[180px] items-center gap-1 rounded-lg bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-blue-50"
+												>
+													<span className="truncate">{task.name}</span>
+													<button
+														type="button"
+														onClick={() => onRemoveTaskFromSession(task.id)}
+														className="rounded p-0.5 text-blue-200 hover:bg-white/10 hover:text-white"
+														title="Remove from working set"
+													>
+														<X className="w-2.5 h-2.5" />
+													</button>
+												</span>
+											))}
+										</div>
+									)}
 								</div>
 							</div>
 
@@ -200,6 +241,16 @@ export default function WorkingBar({
 								</div>
 
 								<div className="w-px h-4 bg-white/10" />
+								<button
+									onClick={() =>
+										setShowSessionTaskPicker(!showSessionTaskPicker)
+									}
+									className="flex-1 sm:flex-none p-2 hover:bg-white/10 rounded-lg transition-colors text-blue-200 hover:text-white"
+									title="Add task to working set"
+								>
+									<Layers className="w-4 h-4 mx-auto" />
+								</button>
+
 								<button
 									onClick={onToggleTimer}
 									className="flex-1 sm:flex-none p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -247,6 +298,71 @@ export default function WorkingBar({
 								</button>
 							</div>
 						</motion.div>
+
+						<AnimatePresence>
+							{showSessionTaskPicker && (
+								<motion.div
+									initial={{ opacity: 0, y: -6 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: -6 }}
+									className={`mt-2 rounded-xl border p-2 shadow-sm ${
+										darkMode
+											? "bg-gray-900 border-gray-800"
+											: "bg-white border-gray-100"
+									}`}
+								>
+									<div className="flex items-center gap-2">
+										<div
+											className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+												darkMode ? "bg-gray-800" : "bg-blue-50"
+											}`}
+										>
+											<Layers className="w-3.5 h-3.5 text-blue-500" />
+										</div>
+										<input
+											type="text"
+											value={sessionTaskQuery}
+											onChange={(e) => setSessionTaskQuery(e.target.value)}
+											placeholder="Add another task to this session..."
+											className={`flex-1 bg-transparent px-2 py-1.5 text-sm font-medium outline-none border-none ${
+												darkMode
+													? "placeholder-gray-600 text-gray-200"
+													: "placeholder-gray-400 text-gray-800"
+											}`}
+										/>
+										<button
+											type="button"
+											onClick={() => setShowSessionTaskPicker(false)}
+											className="p-1.5 text-gray-400 hover:text-gray-600"
+											title="Close"
+										>
+											<X className="w-3.5 h-3.5" />
+										</button>
+									</div>
+									{sessionTaskSuggestions.length > 0 && (
+										<div className="mt-2 max-h-44 overflow-y-auto no-scrollbar">
+											{sessionTaskSuggestions.map((task) => (
+												<button
+													key={task.id}
+													type="button"
+													onClick={() => {
+														onAddTaskToSession(task.id);
+														setSessionTaskQuery("");
+													}}
+													className={`w-full rounded-lg px-3 py-2 text-left text-xs font-bold transition-colors ${
+														darkMode
+															? "hover:bg-gray-800 text-gray-200"
+															: "hover:bg-blue-50 text-gray-700"
+													}`}
+												>
+													{task.name}
+												</button>
+											))}
+										</div>
+									)}
+								</motion.div>
+							)}
+						</AnimatePresence>
 
 						{/* Session Log Input */}
 						<AnimatePresence>

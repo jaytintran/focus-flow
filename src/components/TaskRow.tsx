@@ -134,14 +134,14 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 
 	return (
 		<div
-			className={`relative rounded-xl w-full select-none ${isMini ? "overflow-visible" : "overflow-hidden"} ${task.completed ? "bg-gray-50 dark:bg-gray-900/30" : "bg-gray-50 dark:bg-gray-900/30"}`}
+			className={`relative rounded-xl w-full select-none ${task.completed ? "bg-gray-50 dark:bg-gray-900/30" : "bg-gray-50 dark:bg-gray-900/30"}`}
 		>
 			{/* Background Actions (Swipe to Reveal) - Hidden when active */}
 			{!isActive && (
 				<div
-					className={`absolute inset-y-0 right-0 flex items-center justify-end ${
+					className={`absolute inset-y-0 right-0 top-2 flex items-center justify-end ${
 						isCompact ? "px-2.5 gap-2" : "px-4 gap-2.5"
-					} z-0 transition-opacity duration-200 ${isSwipeOpen ? "opacity-100" : "opacity-0"}`}
+					} z-0 transition-opacity duration-200 ${isSwipeOpen ? "opacity-100" : "opacity-0"} ${isMini && "bg-[#030712]! translate-y-1"}`}
 					style={{ width: `${Math.abs(dragLimit) + 20}px` }}
 				>
 					<button
@@ -231,7 +231,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 				animate={controls}
 				onDragEnd={handleDragEnd}
 				onClick={handleCardClick}
-				className={`relative z-10 group flex items-center transition-colors duration-200 border shadow-sm cursor-pointer ${
+				className={`relative z-5 group flex items-center transition-colors duration-200 border shadow-sm cursor-pointer ${
 					isCompact
 						? "p-2 rounded-none gap-2"
 						: isMini
@@ -243,7 +243,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 						: task.completed
 							? "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-blue-100 dark:hover:border-blue-900"
 							: "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-blue-100 dark:hover:border-blue-900"
-				} ${task.completed ? "opacity-50 grayscale-[0.5]" : ""}`}
+				} ${task.completed ? "opacity-50 grayscale-[0.5]" : ""} ${isMini && "bg-[#030712]! border-none!"}`}
 			>
 				{onDragStart && (
 					<div
@@ -256,7 +256,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 								onDragStart(e);
 							}
 						}}
-						className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 dark:text-gray-700 dark:hover:text-gray-500 p-1 shrink-0 transition-colors"
+						className={`cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 dark:text-gray-700 dark:hover:text-gray-500 p-1 shrink-0 transition-colors ${isMini && "mt-4"}`}
 						style={{ touchAction: "none" }}
 						title="Drag to reorder"
 					>
@@ -265,45 +265,125 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 				)}
 				<div className="flex-1 min-w-0">
 					{isMini ? (
-						// MINI MODE: Compact single-line layout
-						<div className="flex items-center gap-2 min-w-0 flex-1">
-							<button
-								onClick={(e) => {
-									e.stopPropagation();
-									triggerHaptic();
-									onToggleComplete(task.id);
-								}}
-								className="shrink-0 text-gray-400 hover:text-blue-500 transition-colors cursor-pointer"
-							>
-								{task.completed ? (
-									<CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-								) : (
-									<Circle className="w-3.5 h-3.5" />
-								)}
-							</button>
+						<>
+							<div className="flex flex-col items-end gap-0.5 px-2">
+								<div className="flex max-w-full flex-row-reverse items-center gap-1 overflow-hidden whitespace-nowrap">
+									<div
+										className={`flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 font-mono text-[8px] ${
+											isActive
+												? "border-orange-400 bg-orange-500 text-white font-bold"
+												: "border-blue-500 bg-blue-600 text-white"
+										}`}
+									>
+										<Clock className="h-2 w-2" />
+										{formatDuration(task.spentTime)}
+									</div>
 
-							{category && (
-								<div
-									className="flex items-center justify-center p-0.5 rounded shrink-0"
-									style={{
-										color: task.completed ? "#9ca3af" : category.color,
-										backgroundColor: task.completed
-											? "rgba(156, 163, 175, 0.15)"
-											: `${category.color}15`,
-									}}
-								>
-									<CategoryIcon name={category.iconName} className="w-3 h-3" />
+									{task.startAt && (
+										<div className="flex shrink-0 items-center gap-1 rounded-md border border-blue-100 bg-blue-50 px-1.5 py-0.5 text-[8px] text-blue-600 dark:border-blue-900/40 dark:bg-blue-950 dark:text-blue-400">
+											<Calendar className="h-2 w-2" />
+											<span>
+												{task.dueDate ? formatScheduledDate(task.dueDate) : "S"}
+												:{" "}
+												{formatScheduledTime(
+													task.startAt,
+													task.endAt,
+													task.duration,
+												)}
+											</span>
+										</div>
+									)}
+									{!task.startAt && task.dueDate && (
+										<div
+											className={`flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[8px] ${
+												new Date(task.dueDate) < new Date() && !task.completed
+													? "border-red-400 bg-red-500 text-white font-bold"
+													: "border-gray-200 bg-gray-100 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+											}`}
+										>
+											<Calendar className="h-2 w-2" />
+											{formatDueDate(task.dueDate)}
+										</div>
+									)}
+
+									{category && (
+										<div
+											className="flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[8px] uppercase text-white"
+											style={{
+												backgroundColor: task.completed
+													? "#9ca3af"
+													: category.color,
+												borderColor: task.completed
+													? "#9ca3af"
+													: category.color,
+											}}
+										>
+											<CategoryIcon
+												name={category.iconName}
+												className="h-2 w-2"
+											/>
+											{category.name}
+										</div>
+									)}
+
+									{tagInfo && (
+										<span
+											className="shrink-0 rounded-md border px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider text-white"
+											style={{
+												backgroundColor: task.completed
+													? "#9ca3af"
+													: tagInfo.color,
+												borderColor: task.completed ? "#9ca3af" : tagInfo.color,
+											}}
+										>
+											{task.tag}
+										</span>
+									)}
 								</div>
-							)}
-
-							<div className="flex-1 min-w-0" onClick={handleCardClick}>
-								<h3
-									className={`text-xs font-bold truncate ${task.completed ? "line-through text-gray-400" : "text-gray-900 dark:text-white"}`}
-								>
-									{task.name}
-								</h3>
 							</div>
-						</div>
+							{/* MINI MODE: Compact single-line layout */}
+							<div className="flex items-center gap-2 min-w-0 flex-1">
+								<button
+									onClick={(e) => {
+										e.stopPropagation();
+										triggerHaptic();
+										onToggleComplete(task.id);
+									}}
+									className="shrink-0 text-gray-400 hover:text-blue-500 transition-colors cursor-pointer"
+								>
+									{task.completed ? (
+										<CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+									) : (
+										<Circle className="w-3.5 h-3.5" />
+									)}
+								</button>
+
+								{category && (
+									<div
+										className="flex items-center justify-center p-0.5 rounded shrink-0"
+										style={{
+											color: task.completed ? "#9ca3af" : category.color,
+											backgroundColor: task.completed
+												? "rgba(156, 163, 175, 0.15)"
+												: `${category.color}15`,
+										}}
+									>
+										<CategoryIcon
+											name={category.iconName}
+											className="w-3 h-3"
+										/>
+									</div>
+								)}
+
+								<div className="flex-1 min-w-0" onClick={handleCardClick}>
+									<h3
+										className={`text-xs font-bold truncate ${task.completed ? "line-through text-gray-400" : "text-gray-900 dark:text-white"}`}
+									>
+										{task.name}
+									</h3>
+								</div>
+							</div>
+						</>
 					) : (
 						// NORMAL/COMPACT MODE: Original layout
 						<>
@@ -447,81 +527,6 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 						</>
 					)}
 				</div>
-
-				{/* MINI MODE: Floating chips on top-right border */}
-				{isMini && (
-					<div className="absolute -top-2 right-0 z-30 flex flex-row-reverse flex-wrap items-start gap-1 justify-end max-w-full pl-8">
-						{/* SPENT TIME CHIP */}
-						<div
-							className={`flex items-center gap-1 font-mono px-1.5 py-0.5 rounded-md border text-[8px] shadow-sm backdrop-blur-sm ${
-								isActive
-									? "bg-orange-500/90 border-orange-400 text-white font-bold"
-									: "bg-blue-600/90 border-blue-500 text-white"
-							}`}
-						>
-							<Clock className="w-2 h-2" />
-							{formatDuration(task.spentTime)}
-						</div>
-
-						{/* SCHEDULED / DUE DATE CHIP */}
-						{task.startAt && (
-							<div className="flex items-center gap-1 bg-blue-50/90 dark:bg-blue-950/90 backdrop-blur-sm text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/40 shadow-sm text-[8px]">
-								<Calendar className="w-2 h-2" />
-								<span>
-									{task.dueDate ? formatScheduledDate(task.dueDate) : "S"}:{" "}
-									{formatScheduledTime(task.startAt, task.endAt, task.duration)}
-								</span>
-							</div>
-						)}
-						{!task.startAt && task.dueDate && (
-							<div
-								className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border shadow-sm text-[8px] backdrop-blur-sm ${
-									new Date(task.dueDate) < new Date() && !task.completed
-										? "bg-red-500/90 border-red-400 text-white font-bold"
-										: "bg-gray-100/90 dark:bg-gray-800/90 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400"
-								}`}
-							>
-								<Calendar className="w-2 h-2" />
-								{formatDueDate(task.dueDate)}
-							</div>
-						)}
-
-						{/* CATEGORY CHIP */}
-						{category && (
-							<div
-								className="flex items-center gap-1 px-1.5 py-0.5 rounded-md border shadow-sm text-[8px] backdrop-blur-sm uppercase"
-								style={{
-									backgroundColor: task.completed
-										? "rgba(156, 163, 175, 0.9)"
-										: `${category.color}90`,
-									borderColor: task.completed
-										? "rgba(156, 163, 175, 0.5)"
-										: `${category.color}`,
-									color: "#fff",
-								}}
-							>
-								<CategoryIcon name={category.iconName} className="w-2 h-2" />
-								{category.name}
-							</div>
-						)}
-
-						{/* TAG CHIP */}
-						{tagInfo && (
-							<span
-								className="px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider shrink-0 text-[8px] shadow-sm backdrop-blur-sm"
-								style={{
-									backgroundColor: task.completed
-										? "rgba(156, 163, 175, 0.9)"
-										: `${tagInfo.color}90`,
-									color: "#fff",
-									border: `1px solid ${task.completed ? "rgba(156, 163, 175, 0.5)" : `${tagInfo.color}`}`,
-								}}
-							>
-								{task.tag}
-							</span>
-						)}
-					</div>
-				)}
 			</motion.div>
 		</div>
 	);

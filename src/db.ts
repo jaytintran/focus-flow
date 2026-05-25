@@ -2,10 +2,11 @@ import { Category, JournalEntry, Task } from "./types";
 
 // 100% Offline IndexedDB wrapper - NO network requests
 const DB_NAME = "focusflow_db";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 const LEGACY_STORE = "keyvalue";
 const TASKS_STORE = "tasks";
+const ARCHIVED_TASKS_STORE = "archivedTasks";
 const JOURNAL_STORE = "journal";
 const CATEGORIES_STORE = "categories";
 const SETTINGS_STORE = "settings";
@@ -68,6 +69,7 @@ function initDB(): Promise<IDBDatabase> {
 			const db = (event.target as IDBOpenDBRequest).result;
 			createStoreIfMissing(db, LEGACY_STORE);
 			createStoreIfMissing(db, TASKS_STORE);
+			createStoreIfMissing(db, ARCHIVED_TASKS_STORE);
 			createStoreIfMissing(db, JOURNAL_STORE);
 			createStoreIfMissing(db, CATEGORIES_STORE);
 			createStoreIfMissing(db, SETTINGS_STORE);
@@ -252,6 +254,26 @@ export async function putTask(task: Task): Promise<void> {
 	await putInStore(TASKS_STORE, task.id, task);
 }
 
+export async function deleteTask(id: string): Promise<void> {
+	await deleteFromStore(TASKS_STORE, id);
+}
+
+export async function getArchivedTasks(): Promise<Task[]> {
+	return sortNewestFirst(await getAllFromStore<Task>(ARCHIVED_TASKS_STORE));
+}
+
+export async function syncArchivedTasks(tasks: Task[]): Promise<void> {
+	await syncRecords(ARCHIVED_TASKS_STORE, tasks);
+}
+
+export async function putArchivedTask(task: Task): Promise<void> {
+	await putInStore(ARCHIVED_TASKS_STORE, task.id, task);
+}
+
+export async function deleteArchivedTask(id: string): Promise<void> {
+	await deleteFromStore(ARCHIVED_TASKS_STORE, id);
+}
+
 export async function getJournalEntries(): Promise<JournalEntry[]> {
 	return sortNewestFirst(await getAllFromStore<JournalEntry>(JOURNAL_STORE));
 }
@@ -298,11 +320,18 @@ export async function clear(): Promise<void> {
 	try {
 		const db = await initDB();
 		const transaction = db.transaction(
-			[TASKS_STORE, JOURNAL_STORE, CATEGORIES_STORE, SETTINGS_STORE],
+			[
+				TASKS_STORE,
+				ARCHIVED_TASKS_STORE,
+				JOURNAL_STORE,
+				CATEGORIES_STORE,
+				SETTINGS_STORE,
+			],
 			"readwrite",
 		);
 		for (const storeName of [
 			TASKS_STORE,
+			ARCHIVED_TASKS_STORE,
 			JOURNAL_STORE,
 			CATEGORIES_STORE,
 			SETTINGS_STORE,
