@@ -141,7 +141,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 				<div
 					className={`absolute inset-y-0 right-0 top-2 flex items-center justify-end ${
 						isCompact ? "px-2.5 gap-2" : "px-4 gap-2.5"
-					} z-0 transition-opacity duration-200 ${isSwipeOpen ? "opacity-100" : "opacity-0"} ${isMini && "bg-[#030712]! translate-y-1"}`}
+					} z-0 transition-opacity duration-200 ${isSwipeOpen ? "opacity-100" : "opacity-0"}`}
 					style={{ width: `${Math.abs(dragLimit) + 20}px` }}
 				>
 					<button
@@ -235,7 +235,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 					isCompact
 						? "p-2 rounded-none gap-2"
 						: isMini
-							? "p-2 rounded-xl gap-2"
+							? "px-2 py-1.5 rounded-xl gap-2"
 							: "p-2.5 rounded-xl gap-3"
 				} ${
 					isActive
@@ -243,7 +243,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 						: task.completed
 							? "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-blue-100 dark:hover:border-blue-900"
 							: "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-blue-100 dark:hover:border-blue-900"
-				} ${task.completed ? "opacity-50 grayscale-[0.5]" : ""} ${isMini && "bg-[#030712]! border-none!"}`}
+				} ${task.completed ? "opacity-50 grayscale-[0.5]" : ""}`}
 			>
 				{onDragStart && (
 					<div
@@ -256,7 +256,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 								onDragStart(e);
 							}
 						}}
-						className={`cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 dark:text-gray-700 dark:hover:text-gray-500 p-1 shrink-0 transition-colors ${isMini && "mt-4"}`}
+						className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 dark:text-gray-700 dark:hover:text-gray-500 p-1 shrink-0 transition-colors"
 						style={{ touchAction: "none" }}
 						title="Drag to reorder"
 					>
@@ -265,125 +265,93 @@ export const TaskRow: React.FC<TaskRowProps> = ({
 				)}
 				<div className="flex-1 min-w-0">
 					{isMini ? (
-						<>
-							<div className="flex flex-col items-end gap-0.5 px-2">
-								<div className="flex max-w-full flex-row-reverse items-center gap-1 overflow-hidden whitespace-nowrap">
-									<div
-										className={`flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 font-mono text-[8px] ${
-											isActive
-												? "border-orange-400 bg-orange-500 text-white font-bold"
-												: "border-blue-500 bg-blue-600 text-white"
-										}`}
-									>
-										<Clock className="h-2 w-2" />
-										{formatDuration(task.spentTime)}
-									</div>
+					<div className="flex items-center gap-2 min-w-0 w-full">
+						{/* Checkbox */}
+						<button
+							onClick={(e) => {
+								e.stopPropagation();
+								triggerHaptic();
+								onToggleComplete(task.id);
+							}}
+							className="shrink-0 text-gray-400 hover:text-blue-500 transition-colors cursor-pointer"
+						>
+							{task.completed ? (
+								<CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+							) : (
+								<Circle className="w-3.5 h-3.5" />
+							)}
+						</button>
 
-									{task.startAt && (
-										<div className="flex shrink-0 items-center gap-1 rounded-md border border-blue-100 bg-blue-50 px-1.5 py-0.5 text-[8px] text-blue-600 dark:border-blue-900/40 dark:bg-blue-950 dark:text-blue-400">
-											<Calendar className="h-2 w-2" />
-											<span>
-												{task.dueDate ? formatScheduledDate(task.dueDate) : "S"}
-												:{" "}
-												{formatScheduledTime(
-													task.startAt,
-													task.endAt,
-													task.duration,
-												)}
-											</span>
-										</div>
-									)}
-									{!task.startAt && task.dueDate && (
-										<div
-											className={`flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[8px] ${
-												new Date(task.dueDate) < new Date() && !task.completed
-													? "border-red-400 bg-red-500 text-white font-bold"
-													: "border-gray-200 bg-gray-100 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
-											}`}
-										>
-											<Calendar className="h-2 w-2" />
-											{formatDueDate(task.dueDate)}
-										</div>
-									)}
-
-									{category && (
-										<div
-											className="flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[8px] uppercase text-white"
-											style={{
-												backgroundColor: task.completed
-													? "#9ca3af"
-													: category.color,
-												borderColor: task.completed
-													? "#9ca3af"
-													: category.color,
-											}}
-										>
-											<CategoryIcon
-												name={category.iconName}
-												className="h-2 w-2"
-											/>
-											{category.name}
-										</div>
-									)}
-
-									{tagInfo && (
-										<span
-											className="shrink-0 rounded-md border px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider text-white"
-											style={{
-												backgroundColor: task.completed
-													? "#9ca3af"
-													: tagInfo.color,
-												borderColor: task.completed ? "#9ca3af" : tagInfo.color,
-											}}
-										>
-											{task.tag}
-										</span>
-									)}
-								</div>
+						{/* Category icon */}
+						{category && (
+							<div
+								className="flex items-center justify-center w-4 h-4 rounded shrink-0"
+								title={category.name}
+								style={{
+									color: task.completed ? "#9ca3af" : category.color,
+									backgroundColor: task.completed
+										? "rgba(156,163,175,0.15)"
+										: `${category.color}20`,
+								}}
+							>
+								<CategoryIcon name={category.iconName} className="w-2.5 h-2.5" />
 							</div>
-							{/* MINI MODE: Compact single-line layout */}
-							<div className="flex items-center gap-2 min-w-0 flex-1">
-								<button
-									onClick={(e) => {
-										e.stopPropagation();
-										triggerHaptic();
-										onToggleComplete(task.id);
-									}}
-									className="shrink-0 text-gray-400 hover:text-blue-500 transition-colors cursor-pointer"
-								>
-									{task.completed ? (
-										<CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-									) : (
-										<Circle className="w-3.5 h-3.5" />
-									)}
-								</button>
+						)}
 
-								{category && (
-									<div
-										className="flex items-center justify-center p-0.5 rounded shrink-0"
-										style={{
-											color: task.completed ? "#9ca3af" : category.color,
-											backgroundColor: task.completed
-												? "rgba(156, 163, 175, 0.15)"
-												: `${category.color}15`,
-										}}
-									>
-										<CategoryIcon
-											name={category.iconName}
-											className="w-3 h-3"
-										/>
-									</div>
-								)}
+						{/* Task title — takes all remaining space and truncates */}
+						<div className="flex-1 min-w-0" onClick={handleCardClick}>
+							<h3 className={`text-xs font-bold truncate ${
+								task.completed
+									? "line-through text-gray-400"
+									: "text-gray-900 dark:text-white"
+							}`}>
+								{task.name}
+							</h3>
+						</div>
 
-								<div className="flex-1 min-w-0" onClick={handleCardClick}>
-									<h3
-										className={`text-xs font-bold truncate ${task.completed ? "line-through text-gray-400" : "text-gray-900 dark:text-white"}`}
-									>
-										{task.name}
-									</h3>
-								</div>
+						{/* Right-side icon-only indicators */}
+						<div className="flex items-center gap-1.5 shrink-0">
+							{/* Tag dot */}
+							{tagInfo && (
+								<div
+									className="w-1.5 h-1.5 rounded-full shrink-0"
+									title={task.tag}
+									style={{ backgroundColor: task.completed ? "#9ca3af" : tagInfo.color }}
+								/>
+							)}
+
+							{/* Calendar icon — shown only if task has a date */}
+							{(task.startAt || task.dueDate) && (
+								<Calendar
+									className={`w-3 h-3 shrink-0 ${
+										task.dueDate && new Date(task.dueDate) < new Date() && !task.completed
+											? "text-red-500"
+											: "text-blue-400"
+									}`}
+									title={
+										task.dueDate
+											? formatDueDate(task.dueDate)
+											: task.startAt
+												? formatScheduledTime(task.startAt, task.endAt, task.duration)
+												: ""
+									}
+								/>
+							)}
+
+							{/* Clock icon with spent time */}
+							<div
+								className={`flex items-center gap-0.5 font-mono text-[9px] shrink-0 ${
+									isActive
+										? "text-orange-500 font-bold"
+										: "text-gray-400 dark:text-gray-500"
+								}`}
+								title="Time spent"
+							>
+								<Clock className="w-2.5 h-2.5" />
+								{formatDuration(task.spentTime)}
 							</div>
-						</>
+						</div>
+					</div>
 					) : (
 						// NORMAL/COMPACT MODE: Original layout
 						<>

@@ -74,6 +74,9 @@ export default function App() {
 	const [showCompleted, setShowCompleted] = useState<boolean>(true);
 	const [showScheduled, setShowScheduled] = useState<boolean>(true);
 
+	const [currentTaskPage, setCurrentTaskPage] = useState<number>(1);
+	const TASKS_PER_PAGE = 10;
+
 	// Modals/View state
 	const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 	const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -576,7 +579,15 @@ export default function App() {
 			duration: taskData.duration,
 			endAt: taskData.endAt,
 		};
-		setTasks([newTask, ...tasks]);
+		const nextTasks = [...tasks, newTask];
+		setTasks(nextTasks);
+
+		// Auto-navigate to the last page if it's active and unscheduled
+		if (!newTask.inbox && !newTask.completed && !newTask.startAt && !newTask.dueDate) {
+			const nextActiveTasksCount = nextTasks.filter(t => !t.inbox && !t.completed && !t.startAt && !t.dueDate && (selectedCategoryId === "all" || t.categoryId === selectedCategoryId) && t.name.toLowerCase().includes(searchQuery.toLowerCase())).length;
+			const nextLastPage = Math.max(1, Math.ceil(nextActiveTasksCount / TASKS_PER_PAGE));
+			setCurrentTaskPage(nextLastPage);
+		}
 	};
 
 	const handleQuickAdd = (e: React.FormEvent) => {
@@ -635,10 +646,18 @@ export default function App() {
 			endAt,
 		};
 
-		setTasks([newTask, ...tasks]);
+		const nextTasks = [...tasks, newTask];
+		setTasks(nextTasks);
 		setQuickAddValue("");
 		setQuickAddRecurring(false); // Reset toggle
 		setQuickAddRecurringIcon("Flame"); // Reset to default
+
+		// Auto-navigate to the last page if it's active and unscheduled
+		if (!newTask.inbox && !newTask.completed && !newTask.startAt && !newTask.dueDate) {
+			const nextActiveTasksCount = nextTasks.filter(t => !t.inbox && !t.completed && !t.startAt && !t.dueDate && (selectedCategoryId === "all" || t.categoryId === selectedCategoryId) && t.name.toLowerCase().includes(searchQuery.toLowerCase())).length;
+			const nextLastPage = Math.max(1, Math.ceil(nextActiveTasksCount / TASKS_PER_PAGE));
+			setCurrentTaskPage(nextLastPage);
+		}
 	};
 
 	const handleUpdateTask = (taskData: Partial<Task>) => {
@@ -649,7 +668,7 @@ export default function App() {
 		if (isArchivedTask) {
 			if (updatedTask.completed === false) {
 				setArchivedTasks((prev) => prev.filter((t) => t.id !== editingTask.id));
-				setTasks((prev) => [updatedTask, ...prev]);
+				setTasks((prev) => [...prev, updatedTask]);
 			} else {
 				setArchivedTasks((prev) =>
 					prev.map((t) => (t.id === editingTask.id ? updatedTask : t)),
@@ -740,7 +759,7 @@ export default function App() {
 				completedAt: undefined,
 			};
 			setArchivedTasks((prev) => prev.filter((t) => t.id !== id));
-			setTasks((prev) => [restoredTask, ...prev]);
+			setTasks((prev) => [...prev, restoredTask]);
 			return;
 		}
 
@@ -886,8 +905,16 @@ export default function App() {
 			duration: taskToReenter.duration,
 		};
 
-		// 3. Update state (new task at the top)
-		setTasks([newTask, ...updatedTasks]);
+		// 3. Update state (new task at the bottom)
+		const nextTasks = [...updatedTasks, newTask];
+		setTasks(nextTasks);
+
+		// Calculate the new page index for the reentered task and navigate to it
+		if (!newTask.inbox && !newTask.completed && !newTask.startAt && !newTask.dueDate) {
+			const nextActiveTasksCount = nextTasks.filter(t => !t.inbox && !t.completed && !t.startAt && !t.dueDate && (selectedCategoryId === "all" || t.categoryId === selectedCategoryId) && t.name.toLowerCase().includes(searchQuery.toLowerCase())).length;
+			const nextLastPage = Math.max(1, Math.ceil(nextActiveTasksCount / TASKS_PER_PAGE));
+			setCurrentTaskPage(nextLastPage);
+		}
 
 		// 4. Start timer for new task
 		setActiveTaskId(newId);
@@ -993,16 +1020,9 @@ export default function App() {
 			return matchesSearch && matchesCategory;
 		});
 
-		// Sort active unscheduled tasks: prioritize default category
+		// Sort active unscheduled tasks: preserve chronological/stored order
 		const activeUnscheduled = filtered
-			.filter((t) => !t.completed && !t.startAt && !t.dueDate)
-			.sort((a, b) => {
-				const catA = categories.find((c) => c.id === a.categoryId);
-				const catB = categories.find((c) => c.id === b.categoryId);
-				if (catA?.isDefault && !catB?.isDefault) return -1;
-				if (!catA?.isDefault && catB?.isDefault) return 1;
-				return 0;
-			});
+			.filter((t) => !t.completed && !t.startAt && !t.dueDate);
 
 		// Sort active scheduled tasks: chronologically earliest to latest
 		const getTaskSortTimestamp = (task: Task): number => {
@@ -1026,6 +1046,19 @@ export default function App() {
 			completedTasks: completed,
 		};
 	}, [tasks, searchQuery, selectedCategoryId, categories]);
+
+	const totalPages = Math.max(1, Math.ceil(activeTasks.length / TASKS_PER_PAGE));
+
+	useEffect(() => {
+		if (currentTaskPage > totalPages) {
+			setCurrentTaskPage(totalPages);
+		}
+	}, [activeTasks.length, totalPages, currentTaskPage]);
+
+	const paginatedActiveTasks = useMemo(() => {
+		const startIndex = (currentTaskPage - 1) * TASKS_PER_PAGE;
+		return activeTasks.slice(startIndex, startIndex + TASKS_PER_PAGE);
+	}, [activeTasks, currentTaskPage]);
 
 	const activeTask = tasks.find((t) => t.id === activeTaskId) || null;
 	const activeSessionTasks = activeSessionTaskIds
@@ -1067,16 +1100,16 @@ export default function App() {
 	const handleReorder = (newActiveTasks: Task[]) => {
 		const updatedTasks = [...tasks];
 
-		// Find all indices of the current filtered tasks in the original array
-		const activeIds = new Set(activeTasks.map((t) => t.id));
+		// Find all indices of the current paginated active tasks in the original array
+		const paginatedIds = new Set(paginatedActiveTasks.map((t) => t.id));
 		const targetIndices: number[] = [];
 		tasks.forEach((task, idx) => {
-			if (activeIds.has(task.id)) {
+			if (paginatedIds.has(task.id)) {
 				targetIndices.push(idx);
 			}
 		});
 
-		// Replace the tasks at those target indices with the new order from newFilteredTasks
+		// Replace the tasks at those target indices with the new order from newActiveTasks
 		newActiveTasks.forEach((reorderedTask, i) => {
 			if (i < targetIndices.length) {
 				updatedTasks[targetIndices[i]] = reorderedTask;
@@ -1162,10 +1195,18 @@ export default function App() {
 								duration: durationVal,
 								endAt,
 							};
-							setTasks([newTask, ...tasks]);
+							const nextTasks = [...tasks, newTask];
+							setTasks(nextTasks);
 							setActiveTaskId(id);
 							setActiveSessionTaskIds([id]);
 							setTimerActive(true);
+
+							// Auto-navigate to the last page if it's active and unscheduled
+							if (!newTask.inbox && !newTask.completed && !newTask.startAt && !newTask.dueDate) {
+								const nextActiveTasksCount = nextTasks.filter(t => !t.inbox && !t.completed && !t.startAt && !t.dueDate && (selectedCategoryId === "all" || t.categoryId === selectedCategoryId) && t.name.toLowerCase().includes(searchQuery.toLowerCase())).length;
+								const nextLastPage = Math.max(1, Math.ceil(nextActiveTasksCount / TASKS_PER_PAGE));
+								setCurrentTaskPage(nextLastPage);
+							}
 						}}
 						onToggleTimer={() => setTimerActive(!timerActive)}
 						onStopTimer={handleStopWorking}
@@ -1428,15 +1469,15 @@ export default function App() {
 						{/* Task List */}
 						<section className="task-list-container flex-1 overflow-y-auto no-scrollbar space-y-3 min-h-0 pt-2!">
 							{/* Active Tasks */}
-							{activeTasks.length > 0 && layoutType === "list" ? (
+							{paginatedActiveTasks.length > 0 && layoutType === "list" ? (
 								<Reorder.Group
 									axis="y"
-									values={activeTasks}
+									values={paginatedActiveTasks}
 									onReorder={handleReorder}
 									className={`space-y-3`}
 								>
 									<AnimatePresence initial={false}>
-										{activeTasks.map((task) => (
+										{paginatedActiveTasks.map((task) => (
 											<ReorderableTaskRow
 												key={task.id}
 												task={task}
@@ -1459,9 +1500,9 @@ export default function App() {
 										))}
 									</AnimatePresence>
 								</Reorder.Group>
-							) : activeTasks.length > 0 && layoutType === "gallery" ? (
+							) : paginatedActiveTasks.length > 0 && layoutType === "gallery" ? (
 								<TaskGallery
-									tasks={activeTasks}
+									tasks={paginatedActiveTasks}
 									categories={categories}
 									activeTaskId={activeTaskId}
 									activeTaskIds={activeSessionTaskIds}
@@ -1476,9 +1517,9 @@ export default function App() {
 									onReenter={handleReenterTask}
 									darkMode={darkMode}
 								/>
-							) : activeTasks.length > 0 && layoutType === "table" ? (
+							) : paginatedActiveTasks.length > 0 && layoutType === "table" ? (
 								<TaskTable
-									tasks={activeTasks}
+									tasks={paginatedActiveTasks}
 									categories={categories}
 									activeTaskId={activeTaskId}
 									activeTaskIds={activeSessionTaskIds}
@@ -1494,6 +1535,49 @@ export default function App() {
 									darkMode={darkMode}
 								/>
 							) : null}
+
+							{/* Pagination Controls */}
+							{totalPages > 1 && (
+								<div className="flex items-center justify-center gap-4 py-2 mt-4 shrink-0">
+									<button
+										type="button"
+										onClick={() => setCurrentTaskPage(prev => Math.max(1, prev - 1))}
+										disabled={currentTaskPage === 1}
+										className={`p-2 rounded-xl transition-all border ${
+											currentTaskPage === 1
+												? "opacity-40 cursor-not-allowed border-transparent text-gray-400"
+												: darkMode
+													? "border-gray-800 bg-gray-900 text-white hover:bg-gray-850 hover:border-gray-700"
+													: "border-gray-150 bg-white text-gray-750 hover:bg-gray-50 hover:border-gray-250 shadow-sm"
+										}`}
+										title="Previous Page"
+									>
+										<Icons.ChevronLeft className="w-4 h-4" />
+									</button>
+									<span className={`text-xs font-bold px-4 py-1.5 rounded-full border shadow-sm ${
+										darkMode
+											? "bg-gray-900 border-gray-800 text-gray-300"
+											: "bg-white border-gray-100 text-gray-600"
+									}`}>
+										Page {currentTaskPage} of {totalPages}
+									</span>
+									<button
+										type="button"
+										onClick={() => setCurrentTaskPage(prev => Math.min(totalPages, prev + 1))}
+										disabled={currentTaskPage === totalPages}
+										className={`p-2 rounded-xl transition-all border ${
+											currentTaskPage === totalPages
+												? "opacity-40 cursor-not-allowed border-transparent text-gray-400"
+												: darkMode
+													? "border-gray-800 bg-gray-900 text-white hover:bg-gray-850 hover:border-gray-700"
+													: "border-gray-150 bg-white text-gray-750 hover:bg-gray-50 hover:border-gray-250 shadow-sm"
+										}`}
+										title="Next Page"
+									>
+										<Icons.ChevronRight className="w-4 h-4" />
+									</button>
+								</div>
+							)}
 
 							{/* Scheduled Section Toggle */}
 							{scheduledTasks.length > 0 && (
