@@ -1,5 +1,5 @@
 import React from "react";
-import { List, LayoutGrid, Table as TableIcon } from "lucide-react";
+import { List, Table as TableIcon } from "lucide-react";
 import { LayoutType } from "../types";
 
 interface LayoutSwitcherProps {
@@ -15,7 +15,6 @@ export const LayoutSwitcher: React.FC<LayoutSwitcherProps> = ({
 }) => {
 	const layouts: { type: LayoutType; icon: any; label: string }[] = [
 		{ type: "list", icon: List, label: "List" },
-		{ type: "gallery", icon: LayoutGrid, label: "Gallery" },
 		{ type: "table", icon: TableIcon, label: "Table" },
 	];
 

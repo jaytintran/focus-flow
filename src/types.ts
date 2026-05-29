@@ -1,6 +1,6 @@
 export type Tag = "quick" | "explore" | "finish" | "handle";
 export type ViewMode = "compact" | "normal" | "mini";
-export type LayoutType = "list" | "gallery" | "table";
+export type LayoutType = "list" | "table";
 
 export interface Category {
 	id: string;

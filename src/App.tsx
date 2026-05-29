@@ -22,7 +22,7 @@ import {
 } from "./utils";
 import { TaskRow } from "./components/TaskRow";
 import { ReorderableTaskRow } from "./components/ReorderableTaskRow";
-import { TaskTable, TaskGallery } from "./components/TaskLayouts";
+import { TaskTable } from "./components/TaskLayouts";
 import { LayoutSwitcher } from "@/src/components/LayoutSwitcher";
 import { CategorySwitcher } from "./components/CategorySwitcher";
 import TaskForm from "./components/TaskForm";
@@ -224,7 +224,8 @@ export default function App() {
         if (savedJournal.length > 0) setJournalEntries(savedJournal);
         if (savedDarkMode) setDarkMode(savedDarkMode === "true");
         if (savedViewMode) setViewMode(savedViewMode as ViewMode);
-        if (savedLayoutType) setLayoutType(savedLayoutType as LayoutType);
+        if (savedLayoutType && ["list", "table"].includes(savedLayoutType))
+          setLayoutType(savedLayoutType as LayoutType);
         if (savedShowAllTasks) setShowAllTasks(JSON.parse(savedShowAllTasks));
         if (savedShowCompleted)
           setShowCompleted(JSON.parse(savedShowCompleted));
@@ -1621,24 +1622,6 @@ export default function App() {
                     />
                   ))}
                 </Reorder.Group>
-              ) : paginatedActiveTasks.length > 0 &&
-                layoutType === "gallery" ? (
-                <TaskGallery
-                  tasks={paginatedActiveTasks}
-                  categories={categories}
-                  activeTaskId={activeTaskId}
-                  activeTaskIds={activeSessionTaskIds}
-                  timerActive={timerActive}
-                  onTogglePlay={handleTogglePlay}
-                  onDelete={handleDeleteTask}
-                  onToggleComplete={handleToggleComplete}
-                  onEdit={(t) => {
-                    setEditingTask(t);
-                    setIsTaskModalOpen(true);
-                  }}
-                  onReenter={handleReenterTask}
-                  darkMode={darkMode}
-                />
               ) : paginatedActiveTasks.length > 0 && layoutType === "table" ? (
                 <TaskTable
                   tasks={paginatedActiveTasks}
@@ -1721,23 +1704,6 @@ export default function App() {
                                 </motion.div>
                               ))}
                             </div>
-                          ) : layoutType === "gallery" ? (
-                            <TaskGallery
-                              tasks={scheduledTasks}
-                              categories={categories}
-                              activeTaskId={activeTaskId}
-                              activeTaskIds={activeSessionTaskIds}
-                              timerActive={timerActive}
-                              onTogglePlay={handleTogglePlay}
-                              onDelete={handleDeleteTask}
-                              onToggleComplete={handleToggleComplete}
-                              onEdit={(t) => {
-                                setEditingTask(t);
-                                setIsTaskModalOpen(true);
-                              }}
-                              onReenter={handleReenterTask}
-                              darkMode={darkMode}
-                            />
                           ) : (
                             <TaskTable
                               tasks={scheduledTasks}
@@ -1823,23 +1789,6 @@ export default function App() {
                                 </motion.div>
                               ))}
                             </div>
-                          ) : layoutType === "gallery" ? (
-                            <TaskGallery
-                              tasks={completedTasks}
-                              categories={categories}
-                              activeTaskId={activeTaskId}
-                              activeTaskIds={activeSessionTaskIds}
-                              timerActive={timerActive}
-                              onTogglePlay={handleTogglePlay}
-                              onDelete={handleDeleteTask}
-                              onToggleComplete={handleToggleComplete}
-                              onEdit={(t) => {
-                                setEditingTask(t);
-                                setIsTaskModalOpen(true);
-                              }}
-                              onReenter={handleReenterTask}
-                              darkMode={darkMode}
-                            />
                           ) : (
                             <TaskTable
                               tasks={completedTasks}
