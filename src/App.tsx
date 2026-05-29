@@ -811,6 +811,43 @@ export default function App() {
     setTasks(tasks.map((t) => (t.id === taskId ? { ...t, ...updates } : t)));
   };
 
+  const playCompleteSound = React.useCallback(() => {
+    try {
+      const ctx = new (
+        window.AudioContext || (window as any).webkitAudioContext
+      )();
+      const now = ctx.currentTime;
+
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc1.type = "sine";
+      osc2.type = "sine";
+
+      // Two-note rising chime: E5 → G5
+      osc1.frequency.setValueAtTime(659.25, now);
+      osc1.frequency.setValueAtTime(0.001, now + 0.12);
+      osc2.frequency.setValueAtTime(783.99, now + 0.1);
+      osc2.frequency.setValueAtTime(0.001, now + 0.28);
+
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.18, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+      osc1.start(now);
+      osc1.stop(now + 0.4);
+      osc2.start(now + 0.1);
+      osc2.stop(now + 0.4);
+
+      setTimeout(() => ctx.close(), 500);
+    } catch (_) {}
+  }, []);
+
   const handleToggleComplete = (id: string) => {
     const archivedTask = archivedTasks.find((t) => t.id === id);
     if (archivedTask) {
@@ -840,6 +877,8 @@ export default function App() {
             setActiveTaskId(remainingIds[0] || null);
             setTimerActive(remainingIds.length > 0 && timerActive);
           }
+          if (completed) playCompleteSound();
+
           return {
             ...t,
             completed,

@@ -141,7 +141,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
       {/* Background Actions (Swipe to Reveal) - Hidden when active */}
       {!isActive && (
         <div
-          className={`absolute inset-y-0 right-0 flex items-center justify-end ${
+          className={`absolute inset-y-0 pl-1.5 right-0 flex items-center justify-end ${
             isCompact ? "px-2.5 gap-2" : "px-4 gap-2.5"
           } z-0 transition-opacity duration-200 ${isSwipeOpen ? "opacity-100" : "opacity-0"}`}
           style={{ width: `${Math.abs(dragLimit) + 20}px` }}
