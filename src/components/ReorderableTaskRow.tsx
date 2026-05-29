@@ -25,10 +25,8 @@ export const ReorderableTaskRow: React.FC<ReorderableTaskRowProps> = (
 			value={props.task}
 			dragListener={false}
 			dragControls={dragControls}
-			initial={{ opacity: 0, y: 10 }}
-			animate={{ opacity: 1, y: 0 }}
-			exit={{ opacity: 0, scale: 0.95 }}
 			className="select-none"
+			layout={false}
 		>
 			<TaskRow {...props} onDragStart={(e) => dragControls.start(e)} />
 		</Reorder.Item>

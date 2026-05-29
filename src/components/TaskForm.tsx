@@ -361,7 +361,7 @@ export default function TaskForm({
 									</div>
 
 									<input
-										autoFocus
+										autoFocus={!initialTask}
 										type="text"
 										value={name}
 										onChange={(e) => handleNameChange(e.target.value)}
