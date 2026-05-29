@@ -1,5 +1,20 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence, Reorder } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+
 import {
   Plus,
   Search,
@@ -57,6 +72,8 @@ export default function App() {
   const [activeSessionTaskIds, setActiveSessionTaskIds] = useState<string[]>(
     [],
   );
+  const [isDragging, setIsDragging] = useState(false);
+
   const [timerActive, setTimerActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all">(
@@ -317,14 +334,14 @@ export default function App() {
   }, []);
 
   // Persist to IndexedDB
-  useEffect(() => {
-    if (!isDataLoaded) return;
-    if (isTimerTickRef.current) {
-      isTimerTickRef.current = false;
-      return;
-    }
-    db.syncTasks(tasks);
-  }, [tasks, isDataLoaded]);
+  // useEffect(() => {
+  //   if (!isDataLoaded) return;
+  //   if (isTimerTickRef.current) {
+  //     isTimerTickRef.current = false;
+  //     return;
+  //   }
+  //   db.syncTasks(tasks);
+  // }, [tasks, isDataLoaded]);
 
   useEffect(() => {
     if (!isDataLoaded) return;
@@ -360,6 +377,15 @@ export default function App() {
       document.documentElement.classList.remove("dark");
     }
   }, [darkMode, isDataLoaded]);
+
+  useEffect(() => {
+    if (!isDataLoaded || isDragging) return;
+    if (isTimerTickRef.current) {
+      isTimerTickRef.current = false;
+      return;
+    }
+    db.syncTasks(tasks);
+  }, [tasks, isDataLoaded, isDragging]);
 
   useEffect(() => {
     if (!isDataLoaded) return;
@@ -1153,27 +1179,33 @@ export default function App() {
     };
   }, [tasks, archivedTasks]);
 
-  const handleReorder = (newActiveTasks: Task[]) => {
-    const updatedTasks = [...tasks];
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // must move 8px before drag starts — prevents conflict with tap/swipe
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200, // hold 200ms on touch before drag activates
+        tolerance: 8,
+      },
+    }),
+  );
 
-    // Find all indices of the current paginated active tasks in the original array
-    const paginatedIds = new Set(paginatedActiveTasks.map((t) => t.id));
-    const targetIndices: number[] = [];
-    tasks.forEach((task, idx) => {
-      if (paginatedIds.has(task.id)) {
-        targetIndices.push(idx);
-      }
+  const handleDragEnd = React.useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    setIsDragging(false);
+
+    if (!over || active.id === over.id) return;
+
+    setTasks((prev) => {
+      const activeIndex = prev.findIndex((t) => t.id === active.id);
+      const overIndex = prev.findIndex((t) => t.id === over.id);
+      if (activeIndex === -1 || overIndex === -1) return prev;
+      return arrayMove(prev, activeIndex, overIndex);
     });
-
-    // Replace the tasks at those target indices with the new order from newActiveTasks
-    newActiveTasks.forEach((reorderedTask, i) => {
-      if (i < targetIndices.length) {
-        updatedTasks[targetIndices[i]] = reorderedTask;
-      }
-    });
-
-    setTasks(updatedTasks);
-  };
+  }, []);
 
   const toggleViewMode = () => {
     const modes: ViewMode[] = ["compact", "normal", "mini"];
@@ -1530,36 +1562,35 @@ export default function App() {
                   darkMode={darkMode}
                   showAllTasks={showAllTasks}
                 />
-
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-2 shrink-0">
+                  <div className="flex items-center justify-center gap-1 shrink-0">
                     <button
                       type="button"
                       onClick={() =>
                         setCurrentTaskPage((prev) => Math.max(1, prev - 1))
                       }
                       disabled={currentTaskPage === 1}
-                      className={`p-2 rounded-xl transition-all border ${
+                      className={`p-1.5 rounded-lg transition-all ${
                         currentTaskPage === 1
-                          ? "opacity-40 cursor-not-allowed border-transparent text-gray-400"
+                          ? "opacity-30 cursor-not-allowed text-gray-400"
                           : darkMode
-                            ? "border-gray-800 bg-gray-900 text-white hover:bg-gray-850 hover:border-gray-700"
-                            : "border-gray-150 bg-white text-gray-750 hover:bg-gray-50 hover:border-gray-250 shadow-sm"
+                            ? "text-gray-400 hover:text-white hover:bg-white/5"
+                            : "text-gray-400 hover:text-gray-700 hover:bg-black/5"
                       }`}
                       title="Previous Page"
                     >
                       <Icons.ChevronLeft className="w-4 h-4" />
                     </button>
+
                     <span
-                      className={`text-xs font-bold px-4 py-1.5 rounded-full border shadow-sm ${
-                        darkMode
-                          ? "bg-gray-900 border-gray-800 text-gray-300"
-                          : "bg-white border-gray-100 text-gray-600"
+                      className={`text-xs font-bold px-2 tabular-nums ${
+                        darkMode ? "text-gray-500" : "text-gray-400"
                       }`}
                     >
                       {currentTaskPage} / {totalPages}
                     </span>
+
                     <button
                       type="button"
                       onClick={() =>
@@ -1568,12 +1599,12 @@ export default function App() {
                         )
                       }
                       disabled={currentTaskPage === totalPages}
-                      className={`p-2 rounded-xl transition-all border ${
+                      className={`p-1.5 rounded-lg transition-all ${
                         currentTaskPage === totalPages
-                          ? "opacity-40 cursor-not-allowed border-transparent text-gray-400"
+                          ? "opacity-30 cursor-not-allowed text-gray-400"
                           : darkMode
-                            ? "border-gray-800 bg-gray-900 text-white hover:bg-gray-850 hover:border-gray-700"
-                            : "border-gray-150 bg-white text-gray-750 hover:bg-gray-50 hover:border-gray-250 shadow-sm"
+                            ? "text-gray-400 hover:text-white hover:bg-white/5"
+                            : "text-gray-400 hover:text-gray-700 hover:bg-black/5"
                       }`}
                       title="Next Page"
                     >
@@ -1594,34 +1625,44 @@ export default function App() {
             <section className="task-list-container flex-1 overflow-y-auto no-scrollbar space-y-3 min-h-0 pt-2!">
               {/* Active Tasks */}
               {paginatedActiveTasks.length > 0 && layoutType === "list" ? (
-                <Reorder.Group
-                  axis="y"
-                  values={paginatedActiveTasks}
-                  onReorder={handleReorder}
-                  className={`space-y-3`}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={() => setIsDragging(true)}
+                  onDragEnd={handleDragEnd}
+                  onDragCancel={() => setIsDragging(false)}
                 >
-                  {paginatedActiveTasks.map((task) => (
-                    <ReorderableTaskRow
-                      key={task.id}
-                      task={task}
-                      category={categories.find(
-                        (c) => c.id === task.categoryId,
-                      )}
-                      isActive={
-                        activeSessionTaskIds.includes(task.id) && timerActive
-                      }
-                      viewMode={viewMode}
-                      onTogglePlay={handleTogglePlay}
-                      onDelete={handleDeleteTask}
-                      onToggleComplete={handleToggleComplete}
-                      onEdit={(t) => {
-                        setEditingTask(t);
-                        setIsTaskModalOpen(true);
-                      }}
-                      onReenter={handleReenterTask}
-                    />
-                  ))}
-                </Reorder.Group>
+                  <SortableContext
+                    items={paginatedActiveTasks.map((t) => t.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-3">
+                      {paginatedActiveTasks.map((task) => (
+                        <ReorderableTaskRow
+                          key={task.id}
+                          task={task}
+                          category={categories.find(
+                            (c) => c.id === task.categoryId,
+                          )}
+                          isActive={
+                            activeSessionTaskIds.includes(task.id) &&
+                            timerActive
+                          }
+                          viewMode={viewMode}
+                          onTogglePlay={handleTogglePlay}
+                          onDelete={handleDeleteTask}
+                          onToggleComplete={handleToggleComplete}
+                          onEdit={(t) => {
+                            setEditingTask(t);
+                            setIsTaskModalOpen(true);
+                          }}
+                          onReenter={handleReenterTask}
+                          onDraggingChange={setIsDragging}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
               ) : paginatedActiveTasks.length > 0 && layoutType === "table" ? (
                 <TaskTable
                   tasks={paginatedActiveTasks}
