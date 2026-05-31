@@ -1076,9 +1076,15 @@ export default function App() {
     setJournalEntries([newEntry, ...journalEntries]);
   };
 
-  const handleUpdateJournalEntry = (id: string, content: string) => {
+  const handleUpdateJournalEntry = (
+    id: string,
+    content: string,
+    updates?: Partial<JournalEntry>,
+  ) => {
     setJournalEntries(
-      journalEntries.map((e) => (e.id === id ? { ...e, content } : e)),
+      journalEntries.map((e) =>
+        e.id === id ? { ...e, content, ...updates } : e,
+      ),
     );
   };
 

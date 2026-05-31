@@ -3,176 +3,187 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ===================================================================
-   DARK MODE PALETTE OVERRIDES (Tailwind v4 CSS variable remapping)
-   Background: #0D0D0D  |  Accent 1: #00FF85 (neon green)
-   Accent 2: #1E90FF (electric blue)  |  Text: #FFFFFF
+   DARK MODE PALETTE — Obsidian + Amber
+   Background: #0F0E0D  |  Accent 1: #F5A623 (amber)
+   Accent 2: #E8E8E8 (warm white)  |  Text: #F0EDE8
    =================================================================== */
 .dark {
-	/* --- Gray scale: built around #0D0D0D almost-black --- */
-	--color-gray-950: #0D0D0D;
-	--color-gray-900: #141414;
-	--color-gray-800: #1F1F1F;
-	--color-gray-700: #2E2E2E;
-	--color-gray-600: #444444;
-	--color-gray-500: #6B6B6B;
-	--color-gray-400: #9A9A9A;
-	--color-gray-300: #B8B8B8;
-	--color-gray-200: #D4D4D4;
-	--color-gray-100: #E8E8E8;
-	--color-gray-50: #F5F5F5;
+  /* --- Gray scale: warm-tinted obsidian --- */
+  --color-gray-950: #0f0e0d;
+  --color-gray-900: #171613;
+  --color-gray-800: #221f1a;
+  --color-gray-700: #302c25;
+  --color-gray-600: #4a4540;
+  --color-gray-500: #6e6860;
+  --color-gray-400: #9c9488;
+  --color-gray-300: #bdb5a8;
+  --color-gray-200: #d6d0c8;
+  --color-gray-100: #eae6e0;
+  --color-gray-50: #f5f2ee;
 
-	/* --- Blue scale: built around #1E90FF electric blue --- */
-	--color-blue-950: #071B33;
-	--color-blue-900: #0D2D52;
-	--color-blue-800: #14478A;
-	--color-blue-700: #1A6ABF;
-	--color-blue-600: #1E7FE5;
-	--color-blue-500: #1E90FF;
-	--color-blue-400: #4DA8FF;
-	--color-blue-300: #7DC0FF;
-	--color-blue-200: #ADD6FF;
-	--color-blue-100: #DDEEFF;
-	--color-blue-50: #EEF6FF;
+  /* --- Blue scale: desaturated warm blue (secondary UI) --- */
+  --color-blue-950: #0e1219;
+  --color-blue-900: #161d2b;
+  --color-blue-800: #1f2e46;
+  --color-blue-700: #2c4265;
+  --color-blue-600: #3a5a8a;
+  --color-blue-500: #5078b5;
+  --color-blue-400: #7096cc;
+  --color-blue-300: #96b4e0;
+  --color-blue-200: #bdd0ee;
+  --color-blue-100: #deeaf8;
+  --color-blue-50: #eff4fb;
 
-	/* --- Green scale: built around #00FF85 neon green --- */
-	--color-green-950: #002A16;
-	--color-green-900: #004D28;
-	--color-green-800: #007A3F;
-	--color-green-700: #00A856;
-	--color-green-600: #00D66C;
-	--color-green-500: #00FF85;
-	--color-green-400: #33FF9E;
-	--color-green-300: #66FFB8;
-	--color-green-200: #99FFD1;
-	--color-green-100: #CCFFE8;
-	--color-green-50: #E6FFF4;
+  /* --- Green scale: muted sage (success states) --- */
+  --color-green-950: #0c1610;
+  --color-green-900: #14261c;
+  --color-green-800: #1e3d2c;
+  --color-green-700: #2a5840;
+  --color-green-600: #377555;
+  --color-green-500: #4a9b70;
+  --color-green-400: #6db88e;
+  --color-green-300: #94cda9;
+  --color-green-200: #bddfc6;
+  --color-green-100: #dceee3;
+  --color-green-50: #eef7f1;
 
-	/* --- Emerald follows green accent for consistency --- */
-	--color-emerald-500: #00FF85;
-	--color-emerald-400: #33FF9E;
+  /* --- Emerald follows green --- */
+  --color-emerald-500: #4a9b70;
+  --color-emerald-400: #6db88e;
 
-	/* --- Red scale: slightly warmer to complement the palette --- */
-	--color-red-950: #2D0A0A;
-	--color-red-900: #4A1111;
-	--color-red-800: #7A1B1B;
-	--color-red-700: #AA2424;
-	--color-red-600: #D42E2E;
-	--color-red-500: #FF3B3B;
-	--color-red-400: #FF6B6B;
-	--color-red-300: #FF9A9A;
-	--color-red-200: #FFC8C8;
-	--color-red-100: #FFE8E8;
-	--color-red-50: #FFF5F5;
+  /* --- Amber scale: the primary accent --- */
+  --color-amber-950: #1f1100;
+  --color-amber-900: #361d00;
+  --color-amber-800: #5c3200;
+  --color-amber-700: #8a4d00;
+  --color-amber-600: #bf7000;
+  --color-amber-500: #f5a623;
+  --color-amber-400: #f7bc55;
+  --color-amber-300: #fad080;
+  --color-amber-200: #fce3b0;
+  --color-amber-100: #fef2d8;
+  --color-amber-50: #fff9ee;
 
-	/* --- Orange scale: vibrant to stand out against dark bg --- */
-	--color-orange-950: #2D1600;
-	--color-orange-900: #4A2500;
-	--color-orange-800: #7A3D00;
-	--color-orange-700: #AA5500;
-	--color-orange-600: #D46B00;
-	--color-orange-500: #FF8C00;
-	--color-orange-400: #FFA540;
-	--color-orange-300: #FFBE73;
-	--color-orange-200: #FFD8A6;
-	--color-orange-100: #FFECD4;
-	--color-orange-50: #FFF7EB;
+  /* --- Orange scale: warm, amber-adjacent --- */
+  --color-orange-950: #1f0e00;
+  --color-orange-900: #361800;
+  --color-orange-800: #5c2900;
+  --color-orange-700: #8a3f00;
+  --color-orange-600: #bf5c00;
+  --color-orange-500: #e87d1e;
+  --color-orange-400: #f09a4a;
+  --color-orange-300: #f7b97a;
+  --color-orange-200: #fad4a8;
+  --color-orange-100: #fdebd4;
+  --color-orange-50: #fef5ea;
 
-	/* --- White (ensure pure white text in dark mode) --- */
-	--color-white: #FFFFFF;
+  /* --- Red scale: warm ember red --- */
+  --color-red-950: #1f0808;
+  --color-red-900: #361010;
+  --color-red-800: #5c1c1c;
+  --color-red-700: #8a2828;
+  --color-red-600: #b83a3a;
+  --color-red-500: #e05252;
+  --color-red-400: #e87878;
+  --color-red-300: #f0a0a0;
+  --color-red-200: #f7c8c8;
+  --color-red-100: #fbe4e4;
+  --color-red-50: #fdf2f2;
+
+  /* --- White: warm white, not pure --- */
+  --color-white: #f0ede8;
 }
 
 @layer base {
-	::-webkit-scrollbar {
-		width: 6px;
-		height: 6px;
-	}
-	::-webkit-scrollbar-track {
-		background: transparent;
-	}
-	::-webkit-scrollbar-thumb {
-		background: #cbd5e1;
-		border-radius: 10px;
-	}
-	.dark ::-webkit-scrollbar-thumb {
-		background: #2E2E2E;
-	}
-	::-webkit-scrollbar-thumb:hover {
-		background: #94a3b8;
-	}
-	.dark ::-webkit-scrollbar-thumb:hover {
-		background: #444444;
-	}
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background: #302c25;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #4a4540;
+  }
 }
 
 /* Hide scrollbar */
 .no-scrollbar::-webkit-scrollbar {
-	display: none;
+  display: none;
 }
 
 .no-scrollbar {
-	-ms-overflow-style: none;
-	scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Safe area layout extensions for premium edge-to-edge screens */
 :root {
-	--safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-top: env(safe-area-inset-top, 0px);
 }
 
 /* Fallback status bar height overrides for native packaging environments */
 html.plt-android {
-	--safe-area-top: 45px; /* Standard Pixel/Android punch hole/notch status bar clearance */
+  --safe-area-top: 45px;
 }
 
 html.plt-ios {
-	--safe-area-top: 45px; /* Standard iOS notch clearance */
+  --safe-area-top: 45px;
 }
 
 .app-header,
 header {
-	padding-top: calc(1.5rem + var(--safe-area-top)) !important;
+  padding-top: calc(1.5rem + var(--safe-area-top)) !important;
 }
 
 .journal-header {
-	padding-top: calc(1.5rem + var(--safe-area-top)) !important;
+  padding-top: calc(1.5rem + var(--safe-area-top)) !important;
 }
 
 #root {
-	padding-left: env(safe-area-inset-left, 0px);
-	padding-right: env(safe-area-inset-right, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* Extend task list container padding so items scroll past bottom overlays and safe area */
 .task-list-container {
-	padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px)) !important;
+  padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px)) !important;
 }
 
-/* Set HTML/Body background colors to match app themes, avoiding layout boundary flashes */
 html,
 body {
-	background-color: #f8f9fe;
-	transition: background-color 300ms ease;
+  background-color: #f8f9fe;
+  transition: background-color 300ms ease;
 }
 
 html.dark,
 body.dark,
 .dark body {
-	background-color: #0D0D0D;
+  background-color: #0f0e0d;
 }
 
-/* Custom active task breathing glow animation — uses electric blue accent */
+/* Active task breathing glow — amber accent */
 @keyframes active-task-glow {
-	0%,
-	100% {
-		box-shadow: 0 0 0 2px rgba(30, 144, 255, 0.5);
-		border-color: rgba(30, 144, 255, 0.6);
-	}
-	50% {
-		box-shadow: 0 0 0 4px rgba(30, 144, 255, 0.2);
-		border-color: rgba(30, 144, 255, 0.3);
-	}
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.45);
+    border-color: rgba(245, 166, 35, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.15);
+    border-color: rgba(245, 166, 35, 0.25);
+  }
 }
 
 .animate-pulse-subtle {
-	animation: active-task-glow 2s infinite ease-in-out;
+  animation: active-task-glow 2s infinite ease-in-out;
 }
