@@ -64,7 +64,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
   const isMini = viewMode === "mini";
   const buttonWidth = isCompact ? 44 : isMini ? 40 : 48;
   const gap = isCompact ? 8 : isMini ? 6 : 10;
-  const padding = isCompact ? 10 : isMini ? 8 : 16;
+  const padding = isCompact ? 20 : isMini ? 16 : 28;
   // Disable swipe when task is active - only show border indicator
   const dragLimit = isActive
     ? 0
@@ -141,7 +141,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
       {/* Background Actions (Swipe to Reveal) - Hidden when active */}
       {!isActive && (
         <div
-          className={`absolute inset-y-0 pl-1.5 right-0 flex items-center justify-end ${
+          className={`absolute inset-y-0 right-0 ml-3 pl-5 flex items-center justify-end ${
             isCompact ? "px-2.5 gap-2" : "px-4 gap-2.5"
           } z-0 transition-opacity duration-200 ${isSwipeOpen ? "opacity-100" : "opacity-0"}`}
           style={{ width: `${Math.abs(dragLimit) + 20}px` }}
@@ -452,6 +452,18 @@ export const TaskRow: React.FC<TaskRowProps> = ({
                         {category.name}
                       </div>
                     )}
+
+                    {/* TOPIC CHIPS */}
+                    {task.topics &&
+                      task.topics.length > 0 &&
+                      task.topics.map((t) => (
+                        <div
+                          key={t}
+                          className="flex items-center gap-1 bg-teal-50 dark:bg-teal-950/30 text-teal-600 dark:text-teal-400 px-2 py-0.5 rounded-lg border border-teal-100/80 dark:border-teal-900/50"
+                        >
+                          #{t}
+                        </div>
+                      ))}
 
                     {/* SCHEDULED / DUE DATE CHIP */}
                     {task.startAt ? (

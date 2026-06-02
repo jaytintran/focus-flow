@@ -22,11 +22,12 @@ import {
   Target,
   ChevronDown,
   CheckCircle2,
+  X,
 } from "lucide-react";
 import * as Icons from "lucide-react";
 
 import { Task, Category, JournalEntry, ViewMode, LayoutType } from "./types";
-import { DEFAULT_CATEGORIES } from "./constants";
+import { DEFAULT_CATEGORIES, TAGS } from "./constants";
 import {
   generateId,
   parseSmartInput,
@@ -50,6 +51,7 @@ import { HeaderActions } from "./components/HeaderActions";
 import * as db from "./db";
 import { HabitRow } from "./components/HabitRow";
 import { Capacitor } from "@capacitor/core";
+import StatsSection from "./components/StatsSection";
 
 type ActiveView = "main" | "journal" | "inbox";
 const ARCHIVE_COMPLETED_AFTER_DAYS = 90;
@@ -67,6 +69,10 @@ export default function App() {
   const [layoutType, setLayoutType] = useState<LayoutType>("list");
   const [activeView, setActiveView] = useState<ActiveView>("main");
   const [showAllTasks, setShowAllTasks] = useState<boolean>(true);
+  const [groupByTopic, setGroupByTopic] = useState<boolean>(false);
+  const [collapsedTopics, setCollapsedTopics] = useState<Set<string>>(
+    new Set(),
+  );
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [activeSessionTaskIds, setActiveSessionTaskIds] = useState<string[]>(
@@ -91,6 +97,14 @@ export default function App() {
   const [showCompleted, setShowCompleted] = useState<boolean>(true);
   const [showScheduled, setShowScheduled] = useState<boolean>(true);
 
+  // Inline autocomplete popover state for quick-add
+  const [popoverQuery, setPopoverQuery] = useState<{
+    trigger: "?" | "#" | "@" | "+";
+    partial: string;
+    start: number;
+    end: number;
+  } | null>(null);
+
   const [currentTaskPage, setCurrentTaskPage] = useState<number>(1);
   const TASKS_PER_PAGE = 10;
 
@@ -111,6 +125,51 @@ export default function App() {
     if (!quickAddValue.trim()) return null;
     return parseSmartInput(quickAddValue);
   }, [quickAddValue]);
+
+  const allTopics = useMemo(() => {
+    return Array.from(new Set(tasks.flatMap((t) => t.topics || [])));
+  }, [tasks]);
+
+  // Inline autocomplete suggestions for quick-add
+  const popoverSuggestions = useMemo(() => {
+    if (!popoverQuery) return [];
+    const q = popoverQuery.partial.toLowerCase();
+    if (popoverQuery.trigger === "?") {
+      return categories
+        .filter((c) => c.name.toLowerCase().includes(q))
+        .map((c) => ({ value: c.name, label: c.name, color: c.color }));
+    }
+    if (popoverQuery.trigger === "#") {
+      return TAGS.filter((t) => t.label.toLowerCase().includes(q))
+        .map((t) => ({ value: t.label, label: t.label, color: t.color }));
+    }
+    if (popoverQuery.trigger === "@") {
+      const patterns = ["daily", "weekly"];
+      return patterns
+        .filter((p) => p.includes(q))
+        .map((p) => ({ value: p, label: p, color: "#10b981" }));
+    }
+    if (popoverQuery.trigger === "+") {
+      return allTopics
+        .filter((t) => t.toLowerCase().includes(q))
+        .slice(0, 8)
+        .map((t) => ({ value: t, label: t, color: "#14b8a6" }));
+    }
+    return [];
+  }, [popoverQuery, categories, allTopics]);
+
+  // Validated chips — only show when the parsed value actually matches an existing entity
+  const validCategoryChip = useMemo(() => {
+    if (!parsedQuickAdd?.categoryName) return null;
+    return categories.some(
+      (c) => c.name.toLowerCase() === parsedQuickAdd.categoryName!.toLowerCase(),
+    );
+  }, [parsedQuickAdd?.categoryName, categories]);
+
+  const validTagChip = useMemo(() => {
+    if (!parsedQuickAdd?.tag) return null;
+    return TAGS.some((t) => t.label === parsedQuickAdd.tag);
+  }, [parsedQuickAdd?.tag]);
 
   const getWorkingTaskIds = React.useCallback(
     (
@@ -215,6 +274,7 @@ export default function App() {
           savedInitialSpentTime,
           savedInitialSpentTimes,
           savedActiveSessionTaskIds,
+          savedGroupByTopic,
         ] = await Promise.all([
           db.getTasks(),
           db.getArchivedTasks(),
@@ -232,6 +292,7 @@ export default function App() {
           db.getSetting("focusflow_initialspenttime"),
           db.getSetting("focusflow_initialspenttimes"),
           db.getSetting("focusflow_activesessiontaskids"),
+          db.getSetting("focusflow_groupbytopic"),
         ]);
 
         let tasksData = savedTasks;
@@ -246,6 +307,7 @@ export default function App() {
         if (savedShowAllTasks) setShowAllTasks(JSON.parse(savedShowAllTasks));
         if (savedShowCompleted)
           setShowCompleted(JSON.parse(savedShowCompleted));
+        if (savedGroupByTopic) setGroupByTopic(savedGroupByTopic === "true");
 
         const savedSessionIds: string[] = savedActiveSessionTaskIds
           ? JSON.parse(savedActiveSessionTaskIds)
@@ -362,6 +424,11 @@ export default function App() {
     if (!isDataLoaded) return;
     db.setSetting("focusflow_showcompleted", JSON.stringify(showCompleted));
   }, [showCompleted, isDataLoaded]);
+
+  useEffect(() => {
+    if (!isDataLoaded) return;
+    db.setSetting("focusflow_groupbytopic", groupByTopic.toString());
+  }, [groupByTopic, isDataLoaded]);
 
   useEffect(() => {
     if (!isDataLoaded) return;
@@ -1171,6 +1238,29 @@ export default function App() {
     };
   }, [tasks, searchQuery, selectedCategoryId, categories]);
 
+  const groupedActiveTasks = useMemo(() => {
+    if (!groupByTopic) return null;
+
+    const groups: Record<string, Task[]> = {};
+    const unassigned: Task[] = [];
+
+    activeTasks.forEach((task) => {
+      if (task.topics && task.topics.length > 0) {
+        task.topics.forEach((topic) => {
+          const cleanTopic = topic.trim().toLowerCase();
+          if (!groups[cleanTopic]) {
+            groups[cleanTopic] = [];
+          }
+          groups[cleanTopic].push(task);
+        });
+      } else {
+        unassigned.push(task);
+      }
+    });
+
+    return { groups, unassigned };
+  }, [activeTasks, groupByTopic]);
+
   const totalPages = Math.max(
     1,
     Math.ceil(activeTasks.length / TASKS_PER_PAGE),
@@ -1430,158 +1520,12 @@ export default function App() {
         {activeView === "main" ? (
           <>
             {/* Stats Section */}
-            <section className="grid grid-cols-4 gap-3 sm:gap-4 shrink-0">
-              <div
-                className={`${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-100"} p-4 py-2 rounded-xl border shadow-sm`}
-              >
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                  Total Focus
-                </p>
-                <p className="text-xl font-bold font-mono">
-                  {(stats.totalSpent / 3600000).toFixed(1)}h
-                </p>
-              </div>
-              <div
-                className={`${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-100"} p-4 py-2 rounded-xl border shadow-sm`}
-              >
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                  Tasks Done
-                </p>
-                <p className="text-xl font-bold">{stats.completedCount}</p>
-              </div>
-              <div
-                className={`${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-100"} p-4 py-2 rounded-xl border shadow-sm`}
-              >
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                  To Do
-                </p>
-                <p className="text-xl font-bold">{stats.activeCount}</p>
-              </div>
-              <div
-                className={`${darkMode ? "bg-blue-700" : "bg-blue-600"} p-4 py-2 rounded-xl text-white shadow-lg shadow-blue-500/20`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-[10px] font-bold text-blue-100 uppercase tracking-wider">
-                    Efficiency
-                  </p>
-                  <Target className="w-3 h-3 text-blue-200" />
-                </div>
-                <p className="text-xl font-bold">
-                  {stats.totalCount > 0
-                    ? Math.round(
-                        (stats.completedCount / stats.totalCount) * 100,
-                      )
-                    : 0}
-                  %
-                </p>
-              </div>
-            </section>
+            {/* <StatsSection stats={stats} darkMode={darkMode} /> */}
 
-            {/* Filters, Search, Quick Add, Habits */}
+            {/* Filters, Habits, Category Switcher */}
             <section className="space-y-2 shrink-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 items-center">
-                {/* Unified Input with Mode Toggle */}
-                <div className="relative">
-                  <form onSubmit={handleQuickAdd} className="relative group">
-                    <div
-                      className={`p-1 rounded-[24px] border transition-all flex items-center gap-2 shadow-sm ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-100"} focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500`}
-                    >
-                      {/* Mode Toggle Button */}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setInputMode(
-                            inputMode === "search" ? "quickadd" : "search",
-                          )
-                        }
-                        className={`w-9 h-9 rounded-[20px] flex items-center justify-center shrink-0 transition-all ${
-                          darkMode
-                            ? "bg-gray-800 hover:bg-gray-700"
-                            : "bg-gray-50 hover:bg-gray-100"
-                        }`}
-                        title={
-                          inputMode === "search"
-                            ? "Switch to Quick Add"
-                            : "Switch to Search"
-                        }
-                      >
-                        {inputMode === "search" ? (
-                          <Search className="w-4 h-4 text-gray-400" />
-                        ) : (
-                          <Plus className="w-4 h-4 text-blue-500" />
-                        )}
-                      </button>
 
-                      <input
-                        type="text"
-                        value={
-                          inputMode === "search" ? searchQuery : quickAddValue
-                        }
-                        onChange={(e) =>
-                          inputMode === "search"
-                            ? setSearchQuery(e.target.value)
-                            : setQuickAddValue(e.target.value)
-                        }
-                        placeholder={
-                          inputMode === "search"
-                            ? "Search tasks..."
-                            : "Quick add: ?work !today at1pm for30m"
-                        }
-                        className="flex-1 bg-transparent px-2 py-2 text-xs font-bold outline-none border-none placeholder-gray-400 tracking-tight"
-                      />
-                    </div>
-
-                    {/* Parsed Chips - Absolutely Positioned at top-right */}
-                    {inputMode === "quickadd" &&
-                      parsedQuickAdd &&
-                      (parsedQuickAdd.categoryName ||
-                        parsedQuickAdd.isRecurring ||
-                        parsedQuickAdd.tag ||
-                        parsedQuickAdd.relativeDate ||
-                        parsedQuickAdd.startTimeStr ||
-                        parsedQuickAdd.durationMs) && (
-                        <div className="absolute right-0 top-0 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none">
-                          {parsedQuickAdd.categoryName && (
-                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">
-                              #{parsedQuickAdd.categoryName}
-                            </span>
-                          )}
-                          {parsedQuickAdd.isRecurring && (
-                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-green-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">
-                              @{parsedQuickAdd.recurringPattern || "recurring"}
-                            </span>
-                          )}
-                          {parsedQuickAdd.tag && (
-                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-orange-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">
-                              !{parsedQuickAdd.tag.toLowerCase()}
-                            </span>
-                          )}
-                          {parsedQuickAdd.relativeDate && (
-                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500 text-white font-bold uppercase tracking-wide flex items-center gap-1 whitespace-nowrap shadow-md">
-                              <Icons.Calendar className="w-2.5 h-2.5" />
-                              {formatDueDate(
-                                formatDateToInput(parsedQuickAdd.relativeDate),
-                              )}
-                            </span>
-                          )}
-                          {parsedQuickAdd.startTimeStr && (
-                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold uppercase tracking-wide flex items-center gap-1 whitespace-nowrap shadow-md">
-                              <Icons.Clock className="w-2.5 h-2.5" />
-                              {parsedQuickAdd.startTimeStr}
-                            </span>
-                          )}
-                          {parsedQuickAdd.durationMs && (
-                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">
-                              {formatDurationShort(parsedQuickAdd.durationMs)}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                  </form>
-                </div>
-              </div>
-
-              <div className="mt-2">
+              <div className="mt-0">
                 <HabitRow
                   habits={habits}
                   onToggleHabit={handleToggleHabit}
@@ -1608,7 +1552,7 @@ export default function App() {
                   showAllTasks={showAllTasks}
                 />
                 {/* Pagination Controls */}
-                {totalPages > 1 && (
+                {totalPages > 1 && !groupByTopic && (
                   <div className="flex items-center justify-center gap-1 shrink-0">
                     <button
                       type="button"
@@ -1658,18 +1602,221 @@ export default function App() {
                   </div>
                 )}
 
-                <LayoutSwitcher
-                  current={layoutType}
-                  onChange={setLayoutType}
-                  darkMode={darkMode}
-                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setGroupByTopic(!groupByTopic)}
+                    className={`px-3 py-1.5 rounded-2xl border transition-all flex items-center gap-2 text-xs font-bold ${
+                      groupByTopic
+                        ? darkMode
+                          ? "bg-blue-500/20 border-blue-500/30 text-blue-400 font-bold"
+                          : "bg-blue-50 border-blue-100 text-blue-600 font-bold"
+                        : darkMode
+                          ? "bg-gray-900 border-gray-800 text-gray-400 hover:text-gray-300"
+                          : "bg-white border-gray-100 text-gray-400 hover:text-gray-600"
+                    }`}
+                    title="Group by Topic"
+                  >
+                    <Icons.Layers className="w-4 h-4" />
+                    <span className="hidden sm:inline">Group by Topic</span>
+                  </button>
+
+                  <LayoutSwitcher
+                    current={layoutType}
+                    onChange={setLayoutType}
+                    darkMode={darkMode}
+                  />
+                </div>
               </div>
             </section>
 
             {/* Task List */}
             <section className="task-list-container flex-1 overflow-y-auto no-scrollbar space-y-3 min-h-0 pt-2!">
               {/* Active Tasks */}
-              {paginatedActiveTasks.length > 0 && layoutType === "list" ? (
+              {groupByTopic && groupedActiveTasks ? (
+                <div className="space-y-6">
+                  {Object.entries(groupedActiveTasks.groups).map(
+                    ([topic, groupTasks]) => {
+                      const isCollapsed = collapsedTopics.has(topic);
+                      return (
+                        <div key={topic} className="space-y-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCollapsedTopics((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(topic)) next.delete(topic);
+                                else next.add(topic);
+                                return next;
+                              })
+                            }
+                            className="flex items-center gap-2 px-2 w-full text-left"
+                          >
+                            <motion.div
+                              animate={{ rotate: isCollapsed ? -90 : 0 }}
+                              transition={{ duration: 0.15 }}
+                            >
+                              <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                            </motion.div>
+                            <Icons.Tag className="w-3.5 h-3.5 text-teal-500" />
+                            <h4 className="text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                              {topic} ({groupTasks.length})
+                            </h4>
+                          </button>
+                          <AnimatePresence initial={false}>
+                            {!isCollapsed && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden"
+                              >
+                                {layoutType === "list" ? (
+                                  <div className="space-y-3 pt-1">
+                                    {groupTasks.map((task) => (
+                                      <TaskRow
+                                        key={`${topic}-${task.id}`}
+                                        task={task}
+                                        category={categories.find(
+                                          (c) => c.id === task.categoryId,
+                                        )}
+                                        isActive={
+                                          activeSessionTaskIds.includes(
+                                            task.id,
+                                          ) && timerActive
+                                        }
+                                        viewMode={viewMode}
+                                        onTogglePlay={handleTogglePlay}
+                                        onDelete={handleDeleteTask}
+                                        onToggleComplete={handleToggleComplete}
+                                        onEdit={(t) => {
+                                          setEditingTask(t);
+                                          setIsTaskModalOpen(true);
+                                        }}
+                                        onReenter={handleReenterTask}
+                                      />
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="pt-1">
+                                    <TaskTable
+                                      tasks={groupTasks}
+                                      categories={categories}
+                                      activeTaskId={activeTaskId}
+                                      activeTaskIds={activeSessionTaskIds}
+                                      timerActive={timerActive}
+                                      onTogglePlay={handleTogglePlay}
+                                      onDelete={handleDeleteTask}
+                                      onToggleComplete={handleToggleComplete}
+                                      onEdit={(t) => {
+                                        setEditingTask(t);
+                                        setIsTaskModalOpen(true);
+                                      }}
+                                      onReenter={handleReenterTask}
+                                      darkMode={darkMode}
+                                    />
+                                  </div>
+                                )}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    },
+                  )}
+
+                  {groupedActiveTasks.unassigned.length > 0 && (
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCollapsedTopics((prev) => {
+                            const next = new Set(prev);
+                            if (next.has("__unassigned"))
+                              next.delete("__unassigned");
+                            else next.add("__unassigned");
+                            return next;
+                          })
+                        }
+                        className="flex items-center gap-2 px-2 w-full text-left"
+                      >
+                        <motion.div
+                          animate={{
+                            rotate: collapsedTopics.has("__unassigned")
+                              ? -90
+                              : 0,
+                          }}
+                          transition={{ duration: 0.15 }}
+                        >
+                          <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                        </motion.div>
+                        <Icons.HelpCircle className="w-3.5 h-3.5 text-gray-400" />
+                        <h4 className="text-xs font-black uppercase tracking-wider text-gray-400">
+                          Unassigned ({groupedActiveTasks.unassigned.length})
+                        </h4>
+                      </button>
+                      <AnimatePresence initial={false}>
+                        {!collapsedTopics.has("__unassigned") && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            {layoutType === "list" ? (
+                              <div className="space-y-3 pt-1">
+                                {groupedActiveTasks.unassigned.map((task) => (
+                                  <TaskRow
+                                    key={`unassigned-${task.id}`}
+                                    task={task}
+                                    category={categories.find(
+                                      (c) => c.id === task.categoryId,
+                                    )}
+                                    isActive={
+                                      activeSessionTaskIds.includes(task.id) &&
+                                      timerActive
+                                    }
+                                    viewMode={viewMode}
+                                    onTogglePlay={handleTogglePlay}
+                                    onDelete={handleDeleteTask}
+                                    onToggleComplete={handleToggleComplete}
+                                    onEdit={(t) => {
+                                      setEditingTask(t);
+                                      setIsTaskModalOpen(true);
+                                    }}
+                                    onReenter={handleReenterTask}
+                                  />
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="pt-1">
+                                <TaskTable
+                                  tasks={groupedActiveTasks.unassigned}
+                                  categories={categories}
+                                  activeTaskId={activeTaskId}
+                                  activeTaskIds={activeSessionTaskIds}
+                                  timerActive={timerActive}
+                                  onTogglePlay={handleTogglePlay}
+                                  onDelete={handleDeleteTask}
+                                  onToggleComplete={handleToggleComplete}
+                                  onEdit={(t) => {
+                                    setEditingTask(t);
+                                    setIsTaskModalOpen(true);
+                                  }}
+                                  onReenter={handleReenterTask}
+                                  darkMode={darkMode}
+                                />
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </div>
+              ) : paginatedActiveTasks.length > 0 && layoutType === "list" ? (
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -1965,19 +2112,245 @@ export default function App() {
         )}
       </main>
 
-      {/* Floating Action Buttons */}
+      {/* Floating Bottom Bar: Quick Add / Search + FAB */}
       {activeView === "main" && (
-        <div className="fixed right-4 bottom-6 flex items-center gap-3 z-50">
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              setEditingTask(null);
-              setIsTaskModalOpen(true);
-            }}
-            className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-[24px] shadow-2xl shadow-blue-500/40 flex items-center justify-center transition-all hover:scale-110 active:scale-95 group"
-          >
-            <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />
-          </motion.button>
+        <div className="fixed bottom-6 left-4 right-4 z-50">
+          <form onSubmit={handleQuickAdd} className="relative">
+            {/* Inline autocomplete popover */}
+            <AnimatePresence>
+              {inputMode === "quickadd" && popoverSuggestions.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  transition={{ duration: 0.12 }}
+                  className="absolute bottom-full left-0 mb-2 max-h-48 overflow-y-auto rounded-2xl border shadow-xl bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 p-1.5 space-y-0.5 min-w-[160px]"
+                >
+                  {popoverSuggestions.map((s) => (
+                    <button
+                      key={s.value}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setQuickAddValue(
+                          quickAddValue.slice(0, popoverQuery!.start) +
+                            popoverQuery!.trigger + s.value + " " +
+                            quickAddValue.slice(popoverQuery!.end),
+                        );
+                        setPopoverQuery(null);
+                        // Focus stays on input after click
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-xl text-[11px] font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center gap-2"
+                    >
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: s.color }}
+                      />
+                      {popoverQuery?.trigger}{s.value}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Parsed Chips - outside the bar border, above right side */}
+            {inputMode === "quickadd" &&
+              parsedQuickAdd &&
+              (validCategoryChip ||
+                parsedQuickAdd.isRecurring ||
+                parsedQuickAdd.tag ||
+                parsedQuickAdd.relativeDate ||
+                parsedQuickAdd.startTimeStr ||
+                parsedQuickAdd.durationMs) && (
+                <div className="absolute bottom-full right-0 mb-2 flex items-center gap-1.5 pointer-events-none">
+                  {validCategoryChip && (
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">
+                      #{parsedQuickAdd.categoryName}
+                    </span>
+                  )}
+                  {parsedQuickAdd.isRecurring && (
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-green-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">
+                      @{parsedQuickAdd.recurringPattern || "recurring"}
+                    </span>
+                  )}
+                  {validTagChip && (
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-orange-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">
+                      !{parsedQuickAdd.tag!.toLowerCase()}
+                    </span>
+                  )}
+                  {parsedQuickAdd.relativeDate && (
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500 text-white font-bold uppercase tracking-wide flex items-center gap-1 whitespace-nowrap shadow-md">
+                      <Icons.Calendar className="w-2.5 h-2.5" />
+                      {formatDueDate(
+                        formatDateToInput(parsedQuickAdd.relativeDate),
+                      )}
+                    </span>
+                  )}
+                  {parsedQuickAdd.startTimeStr && (
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold uppercase tracking-wide flex items-center gap-1 whitespace-nowrap shadow-md">
+                      <Icons.Clock className="w-2.5 h-2.5" />
+                      {parsedQuickAdd.startTimeStr}
+                    </span>
+                  )}
+                  {parsedQuickAdd.durationMs && (
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">
+                      {formatDurationShort(parsedQuickAdd.durationMs)}
+                    </span>
+                  )}
+                </div>
+              )}
+
+            {/* The bar itself */}
+            <div
+              className={`w-full p-1 rounded-[24px] border flex items-center gap-2 shadow-xl transition-all ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-100"}`}
+            >
+              {/* Mode Toggle Button (left end) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setInputMode(
+                    inputMode === "search" ? "quickadd" : "search",
+                  );
+                  setPopoverQuery(null);
+                }}
+                className={`w-10 h-10 rounded-[20px] flex items-center justify-center shrink-0 transition-all ${
+                  darkMode
+                    ? "bg-gray-800 hover:bg-gray-700"
+                    : "bg-gray-50 hover:bg-gray-100"
+                }`}
+                title={
+                  inputMode === "search"
+                    ? "Switch to Quick Add"
+                    : "Switch to Search"
+                }
+              >
+                {inputMode === "search" ? (
+                  <Search className="w-4 h-4 text-gray-400" />
+                ) : (
+                  <Plus className="w-4 h-4 text-blue-500" />
+                )}
+              </button>
+
+              <input
+                type="text"
+                value={inputMode === "search" ? searchQuery : quickAddValue}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (inputMode === "search") {
+                    setSearchQuery(val);
+                    return;
+                  }
+                  setQuickAddValue(val);
+
+                  // Detect trigger character in the last word
+                  const cursor = e.target.selectionStart ?? val.length;
+                  const beforeCursor = val.slice(0, cursor).toLowerCase();
+                  const triggerMatch = beforeCursor.match(
+                    /([?#@+])(\w*)$/,
+                  );
+                  if (
+                    triggerMatch &&
+                    (
+                      triggerMatch[1] === "?" ||
+                      triggerMatch[1] === "#" ||
+                      triggerMatch[1] === "@" ||
+                      triggerMatch[1] === "+"
+                    )
+                  ) {
+                    const fullTrigger = triggerMatch[1] as "?" | "#" | "@" | "+";
+                    const start = triggerMatch.index!;
+                    const end = start + triggerMatch[0].length;
+                    setPopoverQuery({
+                      trigger: fullTrigger,
+                      partial: triggerMatch[2],
+                      start,
+                      end,
+                    });
+                  } else {
+                    setPopoverQuery(null);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Tab" && popoverSuggestions.length > 0 && popoverQuery) {
+                    e.preventDefault();
+                    const s = popoverSuggestions[0];
+                    setQuickAddValue(
+                      quickAddValue.slice(0, popoverQuery.start) +
+                        popoverQuery.trigger + s.value + " " +
+                        quickAddValue.slice(popoverQuery.end),
+                    );
+                    setPopoverQuery(null);
+                  }
+                  if (e.key === "Escape") {
+                    setPopoverQuery(null);
+                  }
+                }}
+                onBlur={() => setTimeout(() => setPopoverQuery(null), 180)}
+                placeholder={
+                  inputMode === "search"
+                    ? "Search tasks..."
+                    : 'e.g. "Read book ?work !today at3pm for1h30 #quick +topic"'
+                }
+                className="flex-1 bg-transparent px-2 py-2 text-xs font-bold outline-none border-none placeholder-gray-400 tracking-tight"
+              />
+
+              {/* Right-end button: Open modal (quickadd) or Clear (search) */}
+              {inputMode === "quickadd" ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingTask(null);
+                    setIsTaskModalOpen(true);
+                  }}
+                  className="w-10 h-10 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-[20px] flex items-center justify-center shrink-0 transition-all shadow-lg shadow-blue-500/30"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className={`w-10 h-10 rounded-[20px] flex items-center justify-center shrink-0 transition-all ${
+                    darkMode
+                      ? "text-gray-500 hover:text-white hover:bg-gray-800"
+                      : "text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Clickable syntax hint pills — tap to insert */}
+            {inputMode === "quickadd" && (
+              <div className="flex items-center gap-1.5 mt-2 overflow-x-auto no-scrollbar">
+                {[
+                  { label: "?category", hint: "Set category", color: "bg-purple-500" },
+                  { label: "!today", hint: "Due date", color: "bg-blue-500" },
+                  { label: "at2pm", hint: "Start time", color: "bg-emerald-500" },
+                  { label: "for30m", hint: "Duration", color: "bg-amber-500" },
+                  { label: "#quick", hint: "Tag", color: "bg-orange-500" },
+                  { label: "+topic", hint: "Topic label", color: "bg-teal-500" },
+                  { label: "@daily", hint: "Recurring", color: "bg-green-500" },
+                ].map((syntax) => (
+                  <button
+                    key={syntax.label}
+                    type="button"
+                    onClick={() => {
+                      setQuickAddValue((prev) => {
+                        const space = prev && !prev.endsWith(" ") ? " " : "";
+                        return prev + space + syntax.label + " ";
+                      });
+                    }}
+                    className={`text-[9px] px-2 py-1 rounded-full font-black uppercase tracking-wide whitespace-nowrap shrink-0 transition-all hover:scale-105 active:scale-95 text-white shadow-sm ${syntax.color}`}
+                    title={syntax.hint}
+                  >
+                    {syntax.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </form>
         </div>
       )}
 
@@ -1995,6 +2368,7 @@ export default function App() {
         selectedCategoryId={selectedCategoryId}
         defaultRecurring={taskModalDefaultRecurring}
         darkMode={darkMode}
+        allTopics={allTopics}
       />
 
       <CategoryManager

@@ -121,6 +121,7 @@ export function parseSmartInput(input: string): {
 	recurringPattern?: "daily" | "weekly";
 	startTimeStr?: string;
 	durationMs?: number;
+	topics?: string[];
 } {
 	let cleanName = input;
 	let categoryName: string | undefined;
@@ -130,6 +131,14 @@ export function parseSmartInput(input: string): {
 	let recurringPattern: "daily" | "weekly" | undefined;
 	let startTimeStr: string | undefined;
 	let durationMs: number | undefined;
+	let topics: string[] | undefined;
+
+	// Extract topics (+topic)
+	const topicMatches = [...input.matchAll(/(?:^|\s)\+(\w+)/g)];
+	if (topicMatches.length > 0) {
+		topics = topicMatches.map((m) => m[1].toLowerCase());
+		cleanName = cleanName.replace(/(?:^|\s)\+\w+/g, " ").trim();
+	}
 
 	// Extract tag (#quick, #explore, #finish, #handle)
 	const tagMatch = input.match(/#(quick|explore|finish|handle)/i);
@@ -264,6 +273,7 @@ export function parseSmartInput(input: string): {
 		recurringPattern,
 		startTimeStr,
 		durationMs,
+		topics,
 	};
 }
 

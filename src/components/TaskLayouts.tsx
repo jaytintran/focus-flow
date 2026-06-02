@@ -102,8 +102,20 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 									>
 										{task.name}
 									</p>
+									{task.topics && task.topics.length > 0 && (
+										<div className="flex flex-wrap gap-1 mt-1">
+											{task.topics.map((t) => (
+												<span
+													key={t}
+													className="text-[8px] font-black uppercase tracking-wider bg-teal-50 dark:bg-teal-950/30 text-teal-600 dark:text-teal-400 px-1 py-0.25 rounded border border-teal-100/60 dark:border-teal-900/30"
+												>
+													#{t}
+												</span>
+											))}
+										</div>
+									)}
 									{task.description && (
-										<p className="text-[10px] text-gray-400 truncate max-w-[200px]">
+										<p className="text-[10px] text-gray-400 truncate max-w-[200px] mt-0.5">
 											{task.description}
 										</p>
 									)}

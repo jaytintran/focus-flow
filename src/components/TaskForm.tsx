@@ -36,6 +36,7 @@ interface TaskFormProps {
 	selectedCategoryId: string;
 	defaultRecurring?: boolean;
 	darkMode: boolean;
+	allTopics?: string[];
 }
 
 export default function TaskForm({
@@ -47,6 +48,7 @@ export default function TaskForm({
 	selectedCategoryId,
 	defaultRecurring,
 	darkMode,
+	allTopics = [],
 }: TaskFormProps) {
 	const [isRecurring, setIsRecurring] = useState(
 		initialTask?.isRecurring || defaultRecurring || false,
@@ -74,6 +76,16 @@ export default function TaskForm({
 	const [startTime, setStartTime] = useState("");
 	const [duration, setDuration] = useState("");
 	const [showTooltip, setShowTooltip] = useState(false);
+	const [topics, setTopics] = useState<string[]>(initialTask?.topics || []);
+	const [topicInput, setTopicInput] = useState("");
+	const [showTopicSuggestions, setShowTopicSuggestions] = useState(false);
+	const topicSuggestions = useMemo(() => {
+		if (!topicInput.trim()) return [];
+		const lower = topicInput.trim().toLowerCase();
+		return allTopics
+			.filter((t) => t.toLowerCase().includes(lower) && !topics.includes(t))
+			.slice(0, 8);
+	}, [allTopics, topicInput, topics]);
 	const parsedName = useMemo(() => parseSmartInput(name), [name]);
 	const hasParsedNameTokens =
 		!!parsedName.categoryName ||
@@ -81,7 +93,8 @@ export default function TaskForm({
 		!!parsedName.startTimeStr ||
 		!!parsedName.durationMs ||
 		!!parsedName.tag ||
-		!!parsedName.isRecurring;
+		!!parsedName.isRecurring ||
+		!!parsedName.topics;
 
 	useEffect(() => {
 		if (isOpen) {
@@ -93,6 +106,8 @@ export default function TaskForm({
 			setIsRecurring(initialTask?.isRecurring || defaultRecurring || false);
 			setRecurringIcon(initialTask?.recurringIcon || "Flame");
 			setRecurringColor(initialTask?.recurringColor || HABIT_COLORS[0].value);
+			setTopics(initialTask?.topics || []);
+			setTopicInput("");
 
 			if (initialTask?.startAt) {
 				const date = new Date(initialTask.startAt);
@@ -149,7 +164,7 @@ export default function TaskForm({
 		e.preventDefault();
 		if (!name.trim()) return;
 
-		const { cleanName } = parseSmartInput(name);
+		const { cleanName, topics: parsedTopics } = parseSmartInput(name);
 
 		let startAt: number | undefined;
 		let durationVal: number | undefined;
@@ -165,6 +180,11 @@ export default function TaskForm({
 			}
 		}
 
+		// Merge manual topics state with parsed topics from name
+		const finalTopics = Array.from(
+			new Set([...topics, ...(parsedTopics || [])]),
+		).filter(Boolean);
+
 		onSubmit({
 			name: cleanName,
 			description: description.trim() || undefined,
@@ -178,6 +198,7 @@ export default function TaskForm({
 			startAt,
 			duration: durationVal,
 			endAt,
+			topics: finalTopics.length > 0 ? finalTopics : undefined,
 		});
 		onClose();
 	};
@@ -415,6 +436,11 @@ export default function TaskForm({
 															{parsedName.tag}
 														</span>
 													)}
+													{parsedName.topics && parsedName.topics.map(t => (
+														<span key={t} className="text-[9px] px-2 py-0.5 rounded-full bg-teal-600 text-white font-bold uppercase tracking-wide">
+															#{t}
+														</span>
+													))}
 													{parsedName.isRecurring && (
 														<span className="text-[9px] px-2 py-0.5 rounded-full bg-green-500 text-white font-bold uppercase tracking-wide">
 															{parsedName.recurringPattern || "recurring"}
@@ -506,6 +532,103 @@ export default function TaskForm({
 												},
 											)}
 										</div>
+									</div>
+								</div>
+
+								{/* Topics */}
+								<div>
+									<label className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-black text-gray-400 dark:text-gray-500 mb-1.5">
+										<TagIcon className="w-3 h-3" />
+										Topics
+									</label>
+									<div className="space-y-2">
+										<div className="flex gap-2 relative">
+											<input
+												type="text"
+												value={topicInput}
+												onChange={(e) => {
+													setTopicInput(e.target.value);
+													setShowTopicSuggestions(true);
+												}}
+												onFocus={() => setShowTopicSuggestions(true)}
+												onBlur={() => setTimeout(() => setShowTopicSuggestions(false), 150)}
+												onKeyDown={(e) => {
+													if (e.key === "Enter" || e.key === ",") {
+														e.preventDefault();
+														const trimmed = topicInput.trim().replace(/^#/, "").toLowerCase();
+														if (trimmed && !topics.includes(trimmed)) {
+															setTopics([...topics, trimmed]);
+															setTopicInput("");
+														}
+													}
+													if (e.key === "Tab" && topicSuggestions.length > 0) {
+														e.preventDefault();
+														const suggestion = topicSuggestions[0];
+														if (suggestion && !topics.includes(suggestion)) {
+															setTopics([...topics, suggestion]);
+															setTopicInput("");
+														}
+													}
+												}}
+												placeholder="Add topic (press Enter or comma)..."
+												className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl px-3 py-2 text-[12px] font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-700 dark:text-gray-300 placeholder-gray-400"
+											/>
+											<button
+												type="button"
+												onClick={() => {
+													const trimmed = topicInput.trim().replace(/^#/, "").toLowerCase();
+													if (trimmed && !topics.includes(trimmed)) {
+														setTopics([...topics, trimmed]);
+														setTopicInput("");
+													}
+												}}
+												className="px-3 bg-gray-100 dark:bg-gray-800 hover:bg-blue-600 hover:text-white rounded-xl text-xs font-bold transition-all text-gray-500"
+											>
+												Add
+											</button>
+											{/* Autocomplete dropdown */}
+											{showTopicSuggestions && topicSuggestions.length > 0 && (
+												<div className="absolute top-full left-0 right-16 mt-1 z-[90] bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden">
+													{topicSuggestions.map((s) => (
+														<button
+															key={s}
+															type="button"
+															onMouseDown={(e) => {
+																e.preventDefault();
+																if (!topics.includes(s)) {
+																	setTopics([...topics, s]);
+																	setTopicInput("");
+																	setShowTopicSuggestions(false);
+																}
+															}}
+															className="w-full text-left px-3 py-2 text-[11px] font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+														>
+															<span className="text-teal-500">#</span>
+															{s}
+														</button>
+													))}
+												</div>
+											)}
+										</div>
+										{topics.length > 0 && (
+											<div className="flex flex-wrap gap-1.5">
+												{topics.map((t) => (
+													<span
+														key={t}
+														className="flex items-center gap-1 px-2.5 py-1 bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 border border-teal-100 dark:border-teal-900/40 rounded-lg text-[10px] font-black uppercase tracking-wider"
+													>
+														#{t}
+														<button
+															type="button"
+															onClick={() => setTopics(topics.filter((x) => x !== t))}
+															className="hover:text-red-500 font-bold ml-1 transition-colors"
+														>
+															×
+														</button>
+													</span>
+												))}
+											</div>
+										)}
 									</div>
 								</div>
 

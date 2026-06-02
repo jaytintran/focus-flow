@@ -30,6 +30,7 @@ export interface Task {
 	duration?: number; // Duration in milliseconds
 	endAt?: number; // Unix timestamp in milliseconds for end
 	inbox?: boolean; // Flag for inbox tasks
+	topics?: string[];
 }
 
 export type JournalType = "Task" | "Event" | "SessionLog" | "Achievement" | "TimeBlock";
