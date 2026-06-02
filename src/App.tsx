@@ -1355,11 +1355,11 @@ export default function App() {
 
   return (
     <div
-      className={`h-screen flex flex-col transition-colors duration-300 ${darkMode ? "bg-gray-950 text-white" : "bg-[#F8F9FE] text-gray-900"} font-sans overflow-hidden`}
+      className={`h-screen flex flex-col transition-colors duration-300 ${darkMode ? "bg-gray-950 text-white" : "bg-[#F7F5F0] text-gray-900"} font-sans overflow-hidden`}
     >
       {/* Header */}
       <header
-        className={`app-header sticky top-0 z-40 ${darkMode ? "bg-gray-950/80 border-gray-800" : "bg-[#F8F9FE]/80 border-gray-100"} backdrop-blur-md px-4 sm:px-6 pt-[calc(env(safe-area-inset-top,0px)+12px)] pb-3 sm:py-4 border-b`}
+        className={`app-header sticky top-0 z-40 ${darkMode ? "bg-gray-950/80 border-gray-800" : "bg-[#F7F5F0]/80 border-gray-100"} backdrop-blur-md px-4 sm:px-6 pt-[calc(env(safe-area-inset-top,0px)+12px)] pb-3 sm:py-4 border-b`}
       >
         <div className="w-full mx-auto flex items-center justify-between gap-4">
           <WorkingBar

@@ -7,6 +7,25 @@
    Background: #0F0E0D  |  Accent 1: #F5A623 (amber)
    Accent 2: #E8E8E8 (warm white)  |  Text: #F0EDE8
    =================================================================== */
+/* ===================================================================
+   LIGHT MODE PALETTE — Warm Ivory + Terracotta
+   Background: #F7F5F0  |  Accent: #D4784A (terracotta)
+   =================================================================== */
+:root {
+  /* --- Warm primary accent (replaces blue-600/500 as UI color) --- */
+  --color-blue-600: #d4784a;
+  --color-blue-700: #c06a3e;
+  --color-blue-500: #e08f5c;
+  --color-blue-400: #e8a67a;
+  --color-blue-300: #f0c0a0;
+  --color-blue-100: #f8e8de;
+  --color-blue-50: #fdf4ee;
+
+  /* --- Warm gray scale (subtle shift) --- */
+  --color-gray-100: #ece8e0;
+  --color-gray-50: #f5f2ec;
+}
+
 .dark {
   /* --- Gray scale: warm-tinted obsidian --- */
   --color-gray-950: #0f0e0d;
@@ -161,7 +180,7 @@ header {
 
 html,
 body {
-  background-color: #f8f9fe;
+  background-color: #f7f5f0;
   transition: background-color 300ms ease;
 }
 
