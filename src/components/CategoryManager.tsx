@@ -262,7 +262,7 @@ export default function CategoryManager({
 													</div>
 													<button
 														onClick={() => setEditingId(null)}
-														className="w-full py-2 bg-blue-600 text-white rounded-xl text-xs font-bold"
+														className="w-full py-2 bg-blue-600 text-[#1a1a1a] rounded-xl text-xs font-bold"
 													>
 														Done
 													</button>
@@ -403,7 +403,7 @@ export default function CategoryManager({
 									</button>
 									<button
 										onClick={handleAdd}
-										className="flex-1 py-3 bg-blue-600 text-white rounded-2xl font-bold text-xs"
+										className="flex-1 py-3 bg-blue-600 text-[#1a1a1a] rounded-2xl font-bold text-xs"
 									>
 										Add Category
 									</button>

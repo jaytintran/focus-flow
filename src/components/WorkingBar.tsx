@@ -195,7 +195,7 @@ export default function WorkingBar({
 							exit={{ opacity: 0, y: 10 }}
 							className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 sm:p-1.5 sm:pl-4 rounded-xl sm:rounded-xl border shadow-lg transition-all ${
 								darkMode
-									? "bg-blue-600 border-blue-500 text-white"
+									? "bg-blue-600 border-blue-500 text-[#1a1a1a]"
 									: "bg-blue-600 border-blue-500 text-white"
 							}`}
 						>

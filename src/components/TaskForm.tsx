@@ -255,7 +255,7 @@ export default function TaskForm({
 								<button
 									type="submit"
 									form="task-form"
-									className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/25"
+									className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-[#1a1a1a] rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/25"
 								>
 									{initialTask ? (
 										<>
@@ -483,7 +483,7 @@ export default function TaskForm({
 													onClick={() => setCategoryId(cat.id)}
 													className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border ${
 														categoryId === cat.id
-															? "bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-500/20"
+															? "bg-blue-600 border-blue-600 text-[#1a1a1a] shadow-sm shadow-blue-500/20"
 															: "bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
 													}`}
 												>
@@ -582,7 +582,7 @@ export default function TaskForm({
 														setTopicInput("");
 													}
 												}}
-												className="px-3 bg-gray-100 dark:bg-gray-800 hover:bg-blue-600 hover:text-white rounded-xl text-xs font-bold transition-all text-gray-500"
+												className="px-3 bg-gray-100 dark:bg-gray-800 hover:bg-blue-600 hover:text-[#1a1a1a] rounded-xl text-xs font-bold transition-all text-gray-500"
 											>
 												Add
 											</button>

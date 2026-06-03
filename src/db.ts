@@ -160,6 +160,7 @@ async function syncRecords<T extends { id: string }>(
 	storeName: string,
 	records: T[],
 ): Promise<void> {
+	if (records.length === 0) return; // Safety: never wipe data with empty array
 	try {
 		const db = await initDB();
 		const transaction = db.transaction(storeName, "readwrite");
@@ -247,6 +248,7 @@ export async function getTasks(): Promise<Task[]> {
 }
 
 export async function syncTasks(tasks: Task[]): Promise<void> {
+	if (tasks.length === 0) return; // Safety: never wipe data with empty array
 	await Promise.all([syncRecords(TASKS_STORE, tasks), setStoredOrder(TASK_ORDER_KEY, tasks)]);
 }
 

@@ -334,7 +334,7 @@ export default function InboxView({
 																		: { taskId: task.id, type: "date" },
 																)
 															}
-															className={`flex items-center gap-1 px-1.5 py-0.5 ${darkMode ? "bg-blue-600/90 border-blue-500" : "bg-blue-600/90 border-blue-500"} backdrop-blur-sm border rounded-md shadow-sm text-[8px] font-bold text-white`}
+															className={`flex items-center gap-1 px-1.5 py-0.5 ${darkMode ? "bg-blue-600/90 border-blue-500" : "bg-blue-600/90 border-blue-500"} backdrop-blur-sm border rounded-md shadow-sm text-[8px] font-bold text-[#1a1a1a]`}
 														>
 															<Calendar className="w-2.5 h-2.5" />
 															{formatDueDate(task.dueDate)}

@@ -3,55 +3,37 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ===================================================================
-   DARK MODE PALETTE — Obsidian + Amber
-   Background: #0F0E0D  |  Accent 1: #F5A623 (amber)
-   Accent 2: #E8E8E8 (warm white)  |  Text: #F0EDE8
+   NEON GOLD ACCENT — primary UI color (replaces blue)
    =================================================================== */
-/* ===================================================================
-   LIGHT MODE PALETTE — Warm Ivory + Terracotta
-   Background: #F7F5F0  |  Accent: #D4784A (terracotta)
-   =================================================================== */
-:root {
-  /* --- Warm primary accent (replaces blue-600/500 as UI color) --- */
-  --color-blue-600: #d4784a;
-  --color-blue-700: #c06a3e;
-  --color-blue-500: #e08f5c;
-  --color-blue-400: #e8a67a;
-  --color-blue-300: #f0c0a0;
-  --color-blue-100: #f8e8de;
-  --color-blue-50: #fdf4ee;
-
-  /* --- Warm gray scale (subtle shift) --- */
-  --color-gray-100: #ece8e0;
-  --color-gray-50: #f5f2ec;
+@theme {
+  --color-blue-50: #fffaec;
+  --color-blue-100: #fef5d8;
+  --color-blue-200: #fce9a8;
+  --color-blue-300: #fade78;
+  --color-blue-400: #f5d048;
+  --color-blue-500: #e8b830;
+  --color-blue-600: #d4a020;
+  --color-blue-700: #b88a1a;
+  --color-blue-800: #9c7314;
+  --color-blue-900: #7a5a10;
 }
 
+/* ===================================================================
+   DARK MODE PALETTE — Warm dark surface + Neon Gold accent
+   Background: #2a2722  |  Accent: #e8b830 (neon gold)
+   =================================================================== */
 .dark {
-  /* --- Gray scale: warm-tinted obsidian --- */
-  --color-gray-950: #0f0e0d;
-  --color-gray-900: #171613;
-  --color-gray-800: #221f1a;
-  --color-gray-700: #302c25;
-  --color-gray-600: #4a4540;
-  --color-gray-500: #6e6860;
+  --color-gray-950: #2a2722;
+  --color-gray-900: #36332e;
+  --color-gray-800: #44403a;
+  --color-gray-700: #54504a;
+  --color-gray-600: #6e6860;
+  --color-gray-500: #9c9488;
   --color-gray-400: #9c9488;
   --color-gray-300: #bdb5a8;
   --color-gray-200: #d6d0c8;
   --color-gray-100: #eae6e0;
   --color-gray-50: #f5f2ee;
-
-  /* --- Blue scale: desaturated warm blue (secondary UI) --- */
-  --color-blue-950: #0e1219;
-  --color-blue-900: #161d2b;
-  --color-blue-800: #1f2e46;
-  --color-blue-700: #2c4265;
-  --color-blue-600: #3a5a8a;
-  --color-blue-500: #5078b5;
-  --color-blue-400: #7096cc;
-  --color-blue-300: #96b4e0;
-  --color-blue-200: #bdd0ee;
-  --color-blue-100: #deeaf8;
-  --color-blue-50: #eff4fb;
 
   /* --- Green scale: muted sage (success states) --- */
   --color-green-950: #0c1610;
@@ -111,6 +93,20 @@
 
   /* --- White: warm white, not pure --- */
   --color-white: #f0ede8;
+}
+
+/* --- Dark mode shade variants (override body/card darkness) --- */
+.dark-medium {
+  --color-gray-950: #1c1a18;
+  --color-gray-900: #282521;
+}
+.dark-deep {
+  --color-gray-950: #0f0e0d;
+  --color-gray-900: #171613;
+}
+.dark-black {
+  --color-gray-950: #000000;
+  --color-gray-900: #0d0d0d;
 }
 
 @layer base {
@@ -175,7 +171,7 @@ header {
 }
 
 .task-list-container {
-  padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px)) !important;
+  /* padding-bottom handled by sticky bottom bar in page flow */
 }
 
 html,
@@ -187,7 +183,19 @@ body {
 html.dark,
 body.dark,
 .dark body {
+  background-color: #2a2722;
+}
+body.dark-medium,
+.dark-medium body {
+  background-color: #1c1a18;
+}
+body.dark-deep,
+.dark-deep body {
   background-color: #0f0e0d;
+}
+body.dark-black,
+.dark-black body {
+  background-color: #000000;
 }
 
 /* Active task breathing glow — amber accent */

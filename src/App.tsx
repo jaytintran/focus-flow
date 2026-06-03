@@ -18,6 +18,7 @@ import {
 import {
   Plus,
   Search,
+  Send,
   Inbox,
   Target,
   ChevronDown,
@@ -65,6 +66,7 @@ export default function App() {
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [darkMode, setDarkMode] = useState(false);
+  const [darkModeShade, setDarkModeShade] = useState<"warm" | "medium" | "deep" | "black">("warm");
   const [viewMode, setViewMode] = useState<ViewMode>("normal");
   const [layoutType, setLayoutType] = useState<LayoutType>("list");
   const [activeView, setActiveView] = useState<ActiveView>("main");
@@ -275,6 +277,7 @@ export default function App() {
           savedInitialSpentTimes,
           savedActiveSessionTaskIds,
           savedGroupByTopic,
+          savedDarkModeShade,
         ] = await Promise.all([
           db.getTasks(),
           db.getArchivedTasks(),
@@ -293,6 +296,7 @@ export default function App() {
           db.getSetting("focusflow_initialspenttimes"),
           db.getSetting("focusflow_activesessiontaskids"),
           db.getSetting("focusflow_groupbytopic"),
+          db.getSetting("focusflow_darkshade"),
         ]);
 
         let tasksData = savedTasks;
@@ -308,6 +312,8 @@ export default function App() {
         if (savedShowCompleted)
           setShowCompleted(JSON.parse(savedShowCompleted));
         if (savedGroupByTopic) setGroupByTopic(savedGroupByTopic === "true");
+        if (savedDarkModeShade && ["warm", "medium", "deep", "black"].includes(savedDarkModeShade))
+          setDarkModeShade(savedDarkModeShade as "warm" | "medium" | "deep" | "black");
 
         const savedSessionIds: string[] = savedActiveSessionTaskIds
           ? JSON.parse(savedActiveSessionTaskIds)
@@ -446,11 +452,21 @@ export default function App() {
   }, [darkMode, isDataLoaded]);
 
   useEffect(() => {
+    if (!isDataLoaded) return;
+    db.setSetting("focusflow_darkshade", darkModeShade);
+    document.documentElement.classList.remove("dark-warm", "dark-medium", "dark-deep", "dark-black");
+    if (darkMode && darkModeShade !== "warm") {
+      document.documentElement.classList.add(`dark-${darkModeShade}`);
+    }
+  }, [darkModeShade, darkMode, isDataLoaded]);
+
+  useEffect(() => {
     if (!isDataLoaded || isDragging) return;
     if (isTimerTickRef.current) {
       isTimerTickRef.current = false;
       return;
     }
+    if (tasks.length === 0) return; // NEVER overwrite data with empty state
     db.syncTasks(tasks);
   }, [tasks, isDataLoaded, isDragging]);
 
@@ -1355,7 +1371,7 @@ export default function App() {
 
   return (
     <div
-      className={`h-screen flex flex-col transition-colors duration-300 ${darkMode ? "bg-gray-950 text-white" : "bg-[#F7F5F0] text-gray-900"} font-sans overflow-hidden`}
+      className={`h-screen flex flex-col transition-colors duration-300 ${darkMode ? `bg-gray-950 text-white dark-${darkModeShade}` : "bg-[#F7F5F0] text-gray-900"} font-sans overflow-hidden`}
     >
       {/* Header */}
       <header
@@ -1469,8 +1485,10 @@ export default function App() {
                   <HeaderActions
                     viewMode={viewMode}
                     darkMode={darkMode}
+                    darkModeShade={darkModeShade}
                     onToggleViewMode={toggleViewMode}
                     onToggleDarkMode={() => setDarkMode(!darkMode)}
+                    onChangeShade={(shade) => setDarkModeShade(shade)}
                   />
                 </motion.div>
               </AnimatePresence>
@@ -1500,7 +1518,7 @@ export default function App() {
               onClick={() => setActiveView(value)}
               className={`py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${
                 activeView === value
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                  ? "bg-blue-600 text-[#1a1a1a] shadow-lg shadow-blue-500/20"
                   : darkMode
                     ? "text-gray-500 hover:text-gray-300"
                     : "text-gray-400 hover:text-gray-700"
@@ -1513,9 +1531,7 @@ export default function App() {
       </nav>
 
       <main
-        className={`flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 flex flex-col overflow-hidden min-h-0 ${
-          activeView === "main" ? "space-y-4 sm:space-y-6" : "space-y-2"
-        }`}
+        className={`flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 flex flex-col overflow-hidden min-h-0`}
       >
         {activeView === "main" ? (
           <>
@@ -1630,8 +1646,9 @@ export default function App() {
               </div>
             </section>
 
-            {/* Task List */}
-            <section className="task-list-container flex-1 overflow-y-auto no-scrollbar space-y-3 min-h-0 pt-2!">
+            {/* Scrollable Task List */}
+            <div className="flex-1 overflow-y-auto no-scrollbar min-h-0">
+              <section className="space-y-3 pt-2">
               {/* Active Tasks */}
               {groupByTopic && groupedActiveTasks ? (
                 <div className="space-y-6">
@@ -2082,6 +2099,167 @@ export default function App() {
                   </AnimatePresence>
                 )}
             </section>
+            </div>
+
+            {/* Bottom Container: Category pills + Input bar */}
+            <div className="shrink-0 pb-4 pt-2">
+              <div className="max-w-5xl mx-auto">
+
+              {/* Inline autocomplete popover (outside bar, above it) */}
+              <AnimatePresence>
+                {inputMode === "quickadd" && popoverSuggestions.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 6 }}
+                    transition={{ duration: 0.12 }}
+                    className="absolute z-10 -mt-10 left-0 max-h-48 overflow-y-auto rounded-2xl border shadow-xl bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 p-1.5 space-y-0.5 min-w-[160px]"
+                  >
+                    {popoverSuggestions.map((s) => (
+                      <button
+                        key={s.value}
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); setQuickAddValue(quickAddValue.slice(0, popoverQuery!.start) + popoverQuery!.trigger + s.value + " " + quickAddValue.slice(popoverQuery!.end)); setPopoverQuery(null); }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-[11px] font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center gap-2"
+                      >
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                        {popoverQuery?.trigger}{s.value}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Parsed Chips (outside bar, above it) */}
+              {inputMode === "quickadd" && parsedQuickAdd && (validCategoryChip || parsedQuickAdd.isRecurring || parsedQuickAdd.tag || parsedQuickAdd.relativeDate || parsedQuickAdd.startTimeStr || parsedQuickAdd.durationMs) && (
+                <div className="absolute right-0 -mt-10 flex items-center gap-1.5 pointer-events-none z-10">
+                  {validCategoryChip && <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">#{parsedQuickAdd.categoryName}</span>}
+                  {parsedQuickAdd.isRecurring && <span className="text-[9px] px-2 py-0.5 rounded-full bg-green-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">@{parsedQuickAdd.recurringPattern || "recurring"}</span>}
+                  {validTagChip && <span className="text-[9px] px-2 py-0.5 rounded-full bg-orange-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">!{parsedQuickAdd.tag!.toLowerCase()}</span>}
+                  {parsedQuickAdd.relativeDate && <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500 text-white font-bold uppercase tracking-wide flex items-center gap-1 whitespace-nowrap shadow-md"><Icons.Calendar className="w-2.5 h-2.5" />{formatDueDate(formatDateToInput(parsedQuickAdd.relativeDate))}</span>}
+                  {parsedQuickAdd.startTimeStr && <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold uppercase tracking-wide flex items-center gap-1 whitespace-nowrap shadow-md"><Icons.Clock className="w-2.5 h-2.5" />{parsedQuickAdd.startTimeStr}</span>}
+                  {parsedQuickAdd.durationMs && <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">{formatDurationShort(parsedQuickAdd.durationMs)}</span>}
+                </div>
+              )}
+
+              <form onSubmit={handleQuickAdd}>
+                {/* The input bar — contains input row + category pills + syntax hints inside the border */}
+                <div className={`w-full rounded-[24px] border shadow-xl transition-all flex flex-col overflow-hidden ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-100"}`}>
+
+                  {/* ── Row 1: Mode toggle + Input + Button ── */}
+                  <div className="p-2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setInputMode(inputMode === "search" ? "quickadd" : "search"); setPopoverQuery(null); }}
+                      className={`w-10 h-10 rounded-[20px] flex items-center justify-center shrink-0 transition-all ${darkMode ? "bg-gray-800 hover:bg-gray-700" : "bg-gray-50 hover:bg-gray-100"}`}
+                      title={inputMode === "search" ? "Switch to Quick Add" : "Switch to Search"}
+                    >
+                      {inputMode === "search" ? <Search className="w-4 h-4 text-gray-400" /> : <Plus className="w-4 h-4 text-blue-500" />}
+                    </button>
+
+                    <input
+                      type="text"
+                      value={inputMode === "search" ? searchQuery : quickAddValue}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (inputMode === "search") { setSearchQuery(val); return; }
+                        setQuickAddValue(val);
+                        const cursor = e.target.selectionStart ?? val.length;
+                        const beforeCursor = val.slice(0, cursor).toLowerCase();
+                        const triggerMatch = beforeCursor.match(/([?#@+])(\w*)$/);
+                        if (triggerMatch && (triggerMatch[1] === "?" || triggerMatch[1] === "#" || triggerMatch[1] === "@" || triggerMatch[1] === "+")) {
+                          setPopoverQuery({ trigger: triggerMatch[1] as "?" | "#" | "@" | "+", partial: triggerMatch[2], start: triggerMatch.index!, end: triggerMatch.index! + triggerMatch[0].length });
+                        } else { setPopoverQuery(null); }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Tab" && popoverSuggestions.length > 0 && popoverQuery) { e.preventDefault(); const s = popoverSuggestions[0]; setQuickAddValue(quickAddValue.slice(0, popoverQuery.start) + popoverQuery.trigger + s.value + " " + quickAddValue.slice(popoverQuery.end)); setPopoverQuery(null); }
+                        if (e.key === "Escape") setPopoverQuery(null);
+                      }}
+                      onBlur={() => setTimeout(() => setPopoverQuery(null), 180)}
+                      placeholder={inputMode === "search" ? "Search tasks..." : 'e.g. "Read book ?work !today at3pm for1h30 #quick +topic"'}
+                      className="flex-1 bg-transparent px-2 py-3 text-sm font-bold outline-none border-none placeholder-gray-400 tracking-tight"
+                    />
+
+                    {/* Right-end button: smart behavior */}
+                    {inputMode === "quickadd" ? (
+                      <button
+                        type={quickAddValue.trim() ? "submit" : "button"}
+                        onClick={() => { if (!quickAddValue.trim()) { setEditingTask(null); setIsTaskModalOpen(true); } }}
+                        className={`w-10 h-10 rounded-[20px] flex items-center justify-center shrink-0 transition-all ${
+                          quickAddValue.trim()
+                            ? "bg-blue-600 hover:bg-blue-700 active:scale-95 text-[#1a1a1a] shadow-lg shadow-blue-500/30"
+                            : "bg-blue-500/10 hover:bg-blue-500/20 text-blue-500"
+                        }`}
+                        title={quickAddValue.trim() ? "Create task" : "Open task form"}
+                      >
+                        {quickAddValue.trim() ? <Send className="w-4 h-4" /> : <Plus className="w-5 h-5" />}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className={`w-10 h-10 rounded-[20px] flex items-center justify-center shrink-0 transition-all ${darkMode ? "text-gray-500 hover:text-white hover:bg-gray-800" : "text-gray-400 hover:text-gray-700 hover:bg-gray-100"}`}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* ── Row 2: Category quick-select pills ── */}
+                  {inputMode === "quickadd" && (
+                    <>
+                      <div className="mx-3 border-b border-dashed border-gray-200 dark:border-gray-700/50" />
+                      <div className="flex flex-wrap gap-1.5 px-3 py-2 overflow-x-auto no-scrollbar">
+                        {categories.map((cat) => {
+                          const isSel = selectedCategoryId === cat.id;
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => setSelectedCategoryId(isSel ? "all" : cat.id)}
+                              className={`px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 border ${isSel ? "text-white shadow-sm" : darkMode ? "bg-gray-800/40 border-gray-800 text-gray-400 hover:bg-gray-800" : "bg-gray-100 border-gray-200 text-gray-500 hover:bg-gray-200"}`}
+                              style={isSel ? { backgroundColor: cat.color, borderColor: cat.color } : {}}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: isSel ? "#fff" : cat.color }} />
+                              {cat.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+
+                  {/* ── Row 3: Syntax hint pills ── */}
+                  {inputMode === "quickadd" && (
+                    <>
+                      <div className="mx-3 border-b border-dashed border-gray-200 dark:border-gray-700/50" />
+                      <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto no-scrollbar">
+                        {[
+                          { label: "?category", hint: "Set category", color: "bg-purple-500" },
+                          { label: "!today", hint: "Due date", color: "bg-blue-500" },
+                          { label: "at2pm", hint: "Start time", color: "bg-emerald-500" },
+                          { label: "for30m", hint: "Duration", color: "bg-amber-500" },
+                          { label: "#quick", hint: "Tag", color: "bg-orange-500" },
+                          { label: "+topic", hint: "Topic label", color: "bg-teal-500" },
+                          { label: "@daily", hint: "Recurring", color: "bg-green-500" },
+                        ].map((syntax) => (
+                          <button
+                            key={syntax.label}
+                            type="button"
+                            onClick={() => setQuickAddValue((prev) => { const space = prev && !prev.endsWith(" ") ? " " : ""; return prev + space + syntax.label + " "; })}
+                            className={`text-[9px] px-2 py-1 rounded-full font-black uppercase tracking-wide whitespace-nowrap shrink-0 transition-all hover:scale-105 active:scale-95 text-white shadow-sm ${syntax.color}`}
+                            title={syntax.hint}
+                          >
+                            {syntax.label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </form>
+              </div>
+            </div>
           </>
         ) : activeView === "journal" ? (
           <JournalView
@@ -2111,248 +2289,6 @@ export default function App() {
           />
         )}
       </main>
-
-      {/* Floating Bottom Bar: Quick Add / Search + FAB */}
-      {activeView === "main" && (
-        <div className="fixed bottom-6 left-4 right-4 z-50">
-          <form onSubmit={handleQuickAdd} className="relative">
-            {/* Inline autocomplete popover */}
-            <AnimatePresence>
-              {inputMode === "quickadd" && popoverSuggestions.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 6 }}
-                  transition={{ duration: 0.12 }}
-                  className="absolute bottom-full left-0 mb-2 max-h-48 overflow-y-auto rounded-2xl border shadow-xl bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 p-1.5 space-y-0.5 min-w-[160px]"
-                >
-                  {popoverSuggestions.map((s) => (
-                    <button
-                      key={s.value}
-                      type="button"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setQuickAddValue(
-                          quickAddValue.slice(0, popoverQuery!.start) +
-                            popoverQuery!.trigger + s.value + " " +
-                            quickAddValue.slice(popoverQuery!.end),
-                        );
-                        setPopoverQuery(null);
-                        // Focus stays on input after click
-                      }}
-                      className="w-full text-left px-3 py-2 rounded-xl text-[11px] font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center gap-2"
-                    >
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: s.color }}
-                      />
-                      {popoverQuery?.trigger}{s.value}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Parsed Chips - outside the bar border, above right side */}
-            {inputMode === "quickadd" &&
-              parsedQuickAdd &&
-              (validCategoryChip ||
-                parsedQuickAdd.isRecurring ||
-                parsedQuickAdd.tag ||
-                parsedQuickAdd.relativeDate ||
-                parsedQuickAdd.startTimeStr ||
-                parsedQuickAdd.durationMs) && (
-                <div className="absolute bottom-full right-0 mb-2 flex items-center gap-1.5 pointer-events-none">
-                  {validCategoryChip && (
-                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">
-                      #{parsedQuickAdd.categoryName}
-                    </span>
-                  )}
-                  {parsedQuickAdd.isRecurring && (
-                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-green-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">
-                      @{parsedQuickAdd.recurringPattern || "recurring"}
-                    </span>
-                  )}
-                  {validTagChip && (
-                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-orange-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">
-                      !{parsedQuickAdd.tag!.toLowerCase()}
-                    </span>
-                  )}
-                  {parsedQuickAdd.relativeDate && (
-                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500 text-white font-bold uppercase tracking-wide flex items-center gap-1 whitespace-nowrap shadow-md">
-                      <Icons.Calendar className="w-2.5 h-2.5" />
-                      {formatDueDate(
-                        formatDateToInput(parsedQuickAdd.relativeDate),
-                      )}
-                    </span>
-                  )}
-                  {parsedQuickAdd.startTimeStr && (
-                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold uppercase tracking-wide flex items-center gap-1 whitespace-nowrap shadow-md">
-                      <Icons.Clock className="w-2.5 h-2.5" />
-                      {parsedQuickAdd.startTimeStr}
-                    </span>
-                  )}
-                  {parsedQuickAdd.durationMs && (
-                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500 text-white font-bold uppercase tracking-wide whitespace-nowrap shadow-md">
-                      {formatDurationShort(parsedQuickAdd.durationMs)}
-                    </span>
-                  )}
-                </div>
-              )}
-
-            {/* The bar itself */}
-            <div
-              className={`w-full p-1 rounded-[24px] border flex items-center gap-2 shadow-xl transition-all ${darkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-100"}`}
-            >
-              {/* Mode Toggle Button (left end) */}
-              <button
-                type="button"
-                onClick={() => {
-                  setInputMode(
-                    inputMode === "search" ? "quickadd" : "search",
-                  );
-                  setPopoverQuery(null);
-                }}
-                className={`w-10 h-10 rounded-[20px] flex items-center justify-center shrink-0 transition-all ${
-                  darkMode
-                    ? "bg-gray-800 hover:bg-gray-700"
-                    : "bg-gray-50 hover:bg-gray-100"
-                }`}
-                title={
-                  inputMode === "search"
-                    ? "Switch to Quick Add"
-                    : "Switch to Search"
-                }
-              >
-                {inputMode === "search" ? (
-                  <Search className="w-4 h-4 text-gray-400" />
-                ) : (
-                  <Plus className="w-4 h-4 text-blue-500" />
-                )}
-              </button>
-
-              <input
-                type="text"
-                value={inputMode === "search" ? searchQuery : quickAddValue}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (inputMode === "search") {
-                    setSearchQuery(val);
-                    return;
-                  }
-                  setQuickAddValue(val);
-
-                  // Detect trigger character in the last word
-                  const cursor = e.target.selectionStart ?? val.length;
-                  const beforeCursor = val.slice(0, cursor).toLowerCase();
-                  const triggerMatch = beforeCursor.match(
-                    /([?#@+])(\w*)$/,
-                  );
-                  if (
-                    triggerMatch &&
-                    (
-                      triggerMatch[1] === "?" ||
-                      triggerMatch[1] === "#" ||
-                      triggerMatch[1] === "@" ||
-                      triggerMatch[1] === "+"
-                    )
-                  ) {
-                    const fullTrigger = triggerMatch[1] as "?" | "#" | "@" | "+";
-                    const start = triggerMatch.index!;
-                    const end = start + triggerMatch[0].length;
-                    setPopoverQuery({
-                      trigger: fullTrigger,
-                      partial: triggerMatch[2],
-                      start,
-                      end,
-                    });
-                  } else {
-                    setPopoverQuery(null);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Tab" && popoverSuggestions.length > 0 && popoverQuery) {
-                    e.preventDefault();
-                    const s = popoverSuggestions[0];
-                    setQuickAddValue(
-                      quickAddValue.slice(0, popoverQuery.start) +
-                        popoverQuery.trigger + s.value + " " +
-                        quickAddValue.slice(popoverQuery.end),
-                    );
-                    setPopoverQuery(null);
-                  }
-                  if (e.key === "Escape") {
-                    setPopoverQuery(null);
-                  }
-                }}
-                onBlur={() => setTimeout(() => setPopoverQuery(null), 180)}
-                placeholder={
-                  inputMode === "search"
-                    ? "Search tasks..."
-                    : 'e.g. "Read book ?work !today at3pm for1h30 #quick +topic"'
-                }
-                className="flex-1 bg-transparent px-2 py-2 text-xs font-bold outline-none border-none placeholder-gray-400 tracking-tight"
-              />
-
-              {/* Right-end button: Open modal (quickadd) or Clear (search) */}
-              {inputMode === "quickadd" ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingTask(null);
-                    setIsTaskModalOpen(true);
-                  }}
-                  className="w-10 h-10 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-[20px] flex items-center justify-center shrink-0 transition-all shadow-lg shadow-blue-500/30"
-                >
-                  <Plus className="w-5 h-5" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className={`w-10 h-10 rounded-[20px] flex items-center justify-center shrink-0 transition-all ${
-                    darkMode
-                      ? "text-gray-500 hover:text-white hover:bg-gray-800"
-                      : "text-gray-400 hover:text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            {/* Clickable syntax hint pills — tap to insert */}
-            {inputMode === "quickadd" && (
-              <div className="flex items-center gap-1.5 mt-2 overflow-x-auto no-scrollbar">
-                {[
-                  { label: "?category", hint: "Set category", color: "bg-purple-500" },
-                  { label: "!today", hint: "Due date", color: "bg-blue-500" },
-                  { label: "at2pm", hint: "Start time", color: "bg-emerald-500" },
-                  { label: "for30m", hint: "Duration", color: "bg-amber-500" },
-                  { label: "#quick", hint: "Tag", color: "bg-orange-500" },
-                  { label: "+topic", hint: "Topic label", color: "bg-teal-500" },
-                  { label: "@daily", hint: "Recurring", color: "bg-green-500" },
-                ].map((syntax) => (
-                  <button
-                    key={syntax.label}
-                    type="button"
-                    onClick={() => {
-                      setQuickAddValue((prev) => {
-                        const space = prev && !prev.endsWith(" ") ? " " : "";
-                        return prev + space + syntax.label + " ";
-                      });
-                    }}
-                    className={`text-[9px] px-2 py-1 rounded-full font-black uppercase tracking-wide whitespace-nowrap shrink-0 transition-all hover:scale-105 active:scale-95 text-white shadow-sm ${syntax.color}`}
-                    title={syntax.hint}
-                  >
-                    {syntax.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </form>
-        </div>
-      )}
 
       {/* Modals */}
       <TaskForm
